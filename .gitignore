@@ -1,0 +1,4 @@
+.vscode
+build
+proxi.egg*
+*.npy

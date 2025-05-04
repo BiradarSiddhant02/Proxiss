@@ -1,0 +1,91 @@
+/*
+ * Copyright 2025 Siddhant Biradar
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// --- proxi.h --- //
+
+#pragma once
+
+#include <vector>
+#include <queue>
+#include <iostream>
+#include <cmath>
+#include <unordered_set>
+#include <functional>
+#include <algorithm>
+#include <numeric>
+#include <utility>
+#include <omp.h>
+#include <string>
+#include <cstring>
+#include <span>
+
+class Proxi {
+protected:
+    // // Objective Functions
+    // Euclidean distance
+    static float euclidean(std::span<const float> A, std::span<const float> B) noexcept;
+
+    // Manhattan distance
+    static float manhattan(std::span<const float> A, std::span<const float> B) noexcept;
+
+    // Cosine similarity
+    static float cosine(std::span<const float> A, std::span<const float> B) noexcept;
+
+    // Helper function to find l2-norm of a vector
+    static float l2_norm(std::span<const float> vec) noexcept;
+
+    // Helper funciton to find dot product of two vectors
+    static float dot(std::span<const float> A, std::span<const float> B) noexcept;
+
+private:
+
+    // Embeddings flattened
+    std::vector<float> m_embeddings_flat;
+
+    // Document Chunks
+    std::vector<std::string> m_documents;
+
+    // Dimensions
+    size_t m_num_samples;
+    size_t m_num_features;
+
+    // K
+    size_t m_K;
+
+    // Flag to represent if the data indexed
+    bool m_is_indexed;
+
+    // Number of threads to be used
+    size_t m_num_threads;
+
+    std::function<float(std::span<const float>, std::span<const float>)> m_objective_function;
+
+    std::vector<size_t> m_get_neighbours(const std::vector<float>& query) noexcept;
+    
+public:
+    Proxi(const size_t k, const size_t num_threads, const std::string objective_function="l2");
+
+    // Method to index the data
+    void index_data(const std::vector<std::vector<float>>& embeddings, const std::vector<std::string>& documents);
+
+    // Methods to return indices of neighbours
+    std::vector<size_t> find_indices(const std::vector<float>& query);
+    std::vector<std::vector<size_t>> find_indices(const std::vector<std::vector<float>>& queries);
+
+    // Method to return document chunk neighbours
+    std::vector<std::string> find_docs(const std::vector<float>& query);
+    std::vector<std::vector<std::string>> find_docs(const std::vector<std::vector<float>>& queries);
+};
