@@ -2,7 +2,6 @@ import argparse
 import numpy as np
 from sklearn.model_selection import train_test_split
 from time import perf_counter_ns
-import timeit
 
 try:
     import faiss
@@ -93,6 +92,7 @@ def main():
     print("\nSample outputs (first 3 test points):")
     for i in range(min(3, len(X_test))):
         print(f" • idxs: {I[i].tolist()} → docs: {docs_out[i]}")
+    print("FAISS using", faiss.omp_get_max_threads(), "threads")
 
 if __name__ == "__main__":
     main()
