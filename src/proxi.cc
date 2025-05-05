@@ -121,11 +121,14 @@ std::vector<size_t> Proxi::m_get_neighbours(const std::vector<float>& query) noe
 
     std::priority_queue<pair> heap;
 
+    long long int num_samples = static_cast<long long int>(m_num_samples);
+    long long int num_features = static_cast<long long int>(m_num_features);
+
     #pragma omp for nowait
-    for (size_t i = 0; i < m_num_samples; i++) {
+    for (long long int i = 0; i < num_samples; i++) {
         float distance = m_objective_function(
             std::span<const float>(query),
-            std::span<const float>(m_embeddings_flat).subspan(i * m_num_features, m_num_features)
+            std::span<const float>(m_embeddings_flat).subspan(i * num_features, num_features)
         );
 
         bool should_insert = heap.size() < m_K;
@@ -223,8 +226,10 @@ std::vector<std::vector<size_t>> Proxi::find_indices(const std::vector<std::vect
 
     std::vector<std::vector<size_t>> indices(queries.size());
 
+    long long int num_queries = static_cast<long long int>(queries.size());
+
     #pragma omp parallel for
-    for (size_t i = 0; i < queries.size(); i++) {
+    for (long long int i = 0; i < num_queries; i++) {
         if (queries[i].size() != m_num_features)
             throw std::runtime_error("Inconsistent number of features.");
 
@@ -261,8 +266,10 @@ std::vector<std::vector<std::string>> Proxi::find_docs(const std::vector<std::ve
 
     std::vector<std::vector<std::string>> results(queries.size());
 
+    long long int num_queries = static_cast<long long int>(queries.size());
+
     #pragma omp parallel for
-    for (size_t i = 0; i < queries.size(); i++) {
+    for (long long int i = 0; i < num_queries; i++) {
         if (queries[i].size() != m_num_features)
             throw std::runtime_error("Inconsistent number of features.");
 
