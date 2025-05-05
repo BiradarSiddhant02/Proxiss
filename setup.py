@@ -17,8 +17,6 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             f"-DPYTHON_EXECUTABLE={sys.executable}",
         ]
-        cfg = "Release"
-        build_args = ["--config", cfg]
 
         # ensure build_temp exists
         if not os.path.exists(self.build_temp):
@@ -26,19 +24,19 @@ class CMakeBuild(build_ext):
 
         # configure
         subprocess.check_call(
-            ["cmake", ext.sourcedir, f"-DCMAKE_BUILD_TYPE={cfg}"] + cmake_args,
+            ["cmake", ext.sourcedir] + cmake_args,
             cwd=self.build_temp,
         )
         # build
         subprocess.check_call(
-            ["cmake", "--build", "."] + build_args,
+            ["cmake", "--build", "."],
             cwd=self.build_temp,
         )
 
 setup(
     name="proxi",
     version="0.1",
-    author="Sidd",
+    author="Siddhant Biradar",
     description="Proxi: Accelerating nearest-neighbor search for high-dimensional data!",
     ext_modules=[CMakeExtension("proxi", sourcedir=".")],
     cmdclass={"build_ext": CMakeBuild},
