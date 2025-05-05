@@ -248,8 +248,9 @@ std::vector<std::string> Proxi::find_docs(const std::vector<float>& query) {
      */
     std::vector<size_t> neighbours = m_get_neighbours(query);
 
-    std::vector<std::string> docs;
-    for (const size_t index : neighbours) { docs.push_back(m_documents[index]); }
+    std::vector<std::string> docs(m_K);
+    for (size_t i = 0; i < m_K; i++)
+        docs[i] = m_documents[neighbours[i]];
 
     return docs;
 }
