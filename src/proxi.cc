@@ -17,96 +17,7 @@
 // --- proxi.cc --- //
 
 #include "proxi.h"
-
-// PROTECTED
-float Proxi::euclidean(std::span<const float> A, std::span<const float> B) noexcept {
-    /**
-     * @brief Computes the Euclidean distance (L2 norm) between two vectors A and B.
-     * 
-     * @param A First vector.
-     * @param B Second vector.
-     * @return The Euclidean distance between A and B.
-     */
-    float distance = 0.0f;
-    
-    size_t length = A.size();
-    for (size_t i = 0; i < length; i++) {
-        float diff = A[i] - B[i];
-        distance += diff * diff;
-    }
-
-    return std::sqrt(distance);
-}
-
-float Proxi::manhattan(std::span<const float> A, std::span<const float> B) noexcept {
-    /**
-     * @brief Computes the Manhattan distance (L1 norm) between two vectors A and B.
-     * 
-     * @param A First vector.
-     * @param B Second vector.
-     * @return The Manhattan distance between A and B.
-     */
-    float distance = 0.0f;
-
-    size_t length = A.size();
-    for (size_t i = 0; i < length; i++) {
-        float diff = A[i] - B[i];
-        distance += std::abs(diff);
-    }
-
-    return distance;
-}
-
-float Proxi::cosine(std::span<const float> A, std::span<const float> B) noexcept {
-    /**
-     * @brief Computes the cosine similarity between two vectors A and B.
-     * Computes A * B / ||A|| ||B||
-     * 
-     * @param A First vector
-     * @param B Second vector
-     * 
-     * @return Cosine similarity (float value in [-1, 1])
-     */
-    const float dot_product = dot(A, B);
-    const float norm_A = l2_norm(A);
-    const float norm_B = l2_norm(B);
-
-    // Handle case where norm of one of the vector is 0
-    if (norm_A == 0.0f || norm_B == 0.0f) 
-        return std::numeric_limits<float>::quiet_NaN();
-
-    return dot_product / (norm_A * norm_B);
-}
-
-float Proxi::l2_norm(std::span<const float> vec) noexcept {
-    /**
-     * @brief Computes the L2 norm (Euclidean norm) of a vector.
-     * 
-     * @param vec The input vector.
-     * @return The L2 norm of the vector.
-     */
-    float norm = 0.0f;
-
-    for (const float ele : vec) { norm += ele * ele; }
-
-    return std::sqrt(norm);
-}
-
-float Proxi::dot(std::span<const float> A, std::span<const float> B) noexcept {
-    /**
-     * @brief Computes the dot product of two vectors A and B.
-     * 
-     * @param A First vector.
-     * @param B Second vector.
-     * @return The dot product of A and B.
-     */
-    float sum = 0.0f;
-
-    size_t length = A.size();
-    for (size_t i = 0; i < length; i++) { sum += A[i] * B[i]; }
-
-    return sum;
-}
+#include "distance.hpp"
 
 // PRIVATE
 std::vector<size_t> Proxi::m_get_neighbours(const std::vector<float>& query) noexcept {
@@ -158,11 +69,17 @@ Proxi::Proxi(const size_t k, const size_t num_threads, const std::string objecti
     m_num_threads(num_threads) {
 
     if (objective_function == "l2"){
-        m_objective_function = euclidean;
+        m_objective_function = [](std::span<const float> A, std::span<const float> B){
+            return distance::euclidean<float>(A, B);
+        };
     } else if (objective_function == "l1") {
-        m_objective_function = manhattan;
+        m_objective_function = [](std::span<const float> A, std::span<const float> B){
+            return distance::manhattan<float>(A, B);
+        };
     } else if (objective_function == "cos") {
-        m_objective_function = cosine;
+        m_objective_function = [](std::span<const float> A, std::span<const float> B){
+            return distance::cosine<float>(A, B);
+        };
     } else {
         throw std::invalid_argument("Invalid Distance function.");
     }

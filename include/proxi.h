@@ -33,23 +33,6 @@
 #include <span>
 
 class Proxi {
-protected:
-    // // Objective Functions
-    // Euclidean distance
-    static float euclidean(std::span<const float> A, std::span<const float> B) noexcept;
-
-    // Manhattan distance
-    static float manhattan(std::span<const float> A, std::span<const float> B) noexcept;
-
-    // Cosine similarity
-    static float cosine(std::span<const float> A, std::span<const float> B) noexcept;
-
-    // Helper function to find l2-norm of a vector
-    static float l2_norm(std::span<const float> vec) noexcept;
-
-    // Helper funciton to find dot product of two vectors
-    static float dot(std::span<const float> A, std::span<const float> B) noexcept;
-
 private:
 
     // Embeddings flattened
