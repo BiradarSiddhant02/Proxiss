@@ -39,7 +39,7 @@ You can build and install Proxi from source.
 
 1.  **Clone the repository (if you haven't already):**
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/BiradarSiddhant02/Proxi.git
     cd Proxi
     ```
 
