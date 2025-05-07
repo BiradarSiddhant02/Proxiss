@@ -20,7 +20,7 @@ class TestProxi(unittest.TestCase):
             [3.0, 3.0]
         ], dtype=np.float32)
 
-        self.k = 2
+        self.k = 3
         self.proxi = Proxi(k=self.k, num_threads=1, objective_function="l2")
         self.proxi.index_data(self.data, self.doc_ids)
 
@@ -49,6 +49,23 @@ class TestProxi(unittest.TestCase):
     def test_invalid_shape(self):
         with self.assertRaises(RuntimeError):
             self.proxi.find_indices_batched(np.array([1.0, 2.0], dtype=np.float32))
+            
+    def test_insert(self):
+        # Initial nearest docs to the query [1.5, 1.5]
+        original_docs = self.proxi.find_docs(self.query)
+        
+        # Insert a new point closer to the query than existing ones
+        self.proxi.insert_data([1.501, 1.501], "z")
+
+        # New nearest docs should now include "z"
+        updated_docs = self.proxi.find_docs(self.query)
+
+        # Check if 'z' appears in the top-k results after insertion
+        self.assertIn("z", updated_docs)
+
+        # Ensure the number of neighbors is still k
+        self.assertEqual(len(updated_docs), self.k)
+
 
 if __name__ == "__main__":
     unittest.main()

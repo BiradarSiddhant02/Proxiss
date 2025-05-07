@@ -70,5 +70,7 @@ PYBIND11_MODULE(proxi, m) {
             }
 
             return self.find_docs(vecs);
-        });
+        })
+
+        .def("insert_data", &Proxi::insert_data);
 }

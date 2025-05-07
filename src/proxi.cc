@@ -197,3 +197,23 @@ std::vector<std::vector<std::string>> Proxi::find_docs(const std::vector<std::ve
     return results;
 }
 
+void Proxi::insert_data(const std::vector<float>& embedding, const std::string& text) {
+    /**
+     * @brief Method to insert new data into the database.
+     * 
+     * @param embedding The embedding vector of the text to be inserted
+     * @param text The text to be inserted into the database
+     * 
+     * @throw std::invalid_argument if the size of the given vector is not equal to the size of 
+     * the vectors in the database
+     */
+
+    // Check if the vector is of the same length of the dataset
+    if (embedding.size() != m_num_features)
+        throw std::invalid_argument("Invalid embedding vector size.");
+
+    m_embeddings_flat.insert(m_embeddings_flat.end(), embedding.begin(), embedding.end());
+    m_documents.push_back(text);
+    
+    m_num_samples++;
+}
