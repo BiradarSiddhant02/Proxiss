@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
 import argparse
 import numpy as np
+
+from sklearn.datasets import make_blobs
 
 def main():
     parser = argparse.ArgumentParser(description="Generate mock data for Proxi benchmark.")
@@ -9,12 +10,19 @@ def main():
     parser.add_argument("--X_path", default="X.npy", help="Output path for feature array (default: X.npy)")
     parser.add_argument("--docs_path", default="docs.npy", help="Output path for documents array (default: docs.npy)")
     args = parser.parse_args()
+    
+    X, y = make_blobs(
+        n_features=args.D,
+        n_samples=args.N,
+        cluster_std=1,
+        centers=4
+    )
 
     print(f"Generating random feature data of shape ({args.N}, {args.D})...")
-    X = np.random.rand(args.N, args.D).astype(np.float32)
+    X = X.astype(np.float32)
 
     print(f"Generating {args.N} mock document strings...")
-    docs = np.array([f"doc_{i}" for i in range(args.N)], dtype=object)
+    docs = np.array([f"class_{y[i]}" for i in range(args.N)], dtype=object)
 
     print(f"Saving feature array to '{args.X_path}' and documents to '{args.docs_path}'...")
     np.save(args.X_path, X)
