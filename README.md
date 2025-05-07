@@ -151,10 +151,9 @@ Proxi includes an interactive script `examples/inference.py` that allows you to 
 To use the inference script, you first need a dataset of embeddings and the corresponding text/words they represent.
 
 For a quick demonstration, you can download pre-computed embeddings and words:
-*   **Embeddings:** [https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/embeddings.npy](https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/embeddings.npy)
-*   **Words/Sentences:** [https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/sentences.npy](https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/sentences.npy)
+*   **Embeddings and words:** [https://www.kaggle.com/datasets/siddhantbiradar/proxi-live-inference-dataset](https://www.kaggle.com/datasets/siddhantbiradar/proxi-live-inference-dataset)
 
-Download these files and place them in a directory of your choice.
+Download the zip file and unzip it in a directory of your choice. The variety of words is relatively small but enough for a demo
 
 ### 2. Run the Inference Script
 
