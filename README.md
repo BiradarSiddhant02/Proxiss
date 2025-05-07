@@ -142,6 +142,67 @@ If you have FAISS installed (`pip install faiss-cpu` or `faiss-gpu`), you can ru
 python scripts/bench_faiss.py --X_path X_data.npy --docs_path docs_data.npy -k 5 --threads 4 --objective l2
 ```
 
+## 💡 Interactive Inference Example
+
+Proxi includes an interactive script `examples/inference.py` that allows you to perform similarity searches on your own data and compare results with FAISS.
+
+### 1. Download Embeddings and Corresponding Text
+
+To use the inference script, you first need a dataset of embeddings and the corresponding text/words they represent.
+
+For a quick demonstration, you can download pre-computed embeddings and words:
+*   **Embeddings:** [https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/embeddings.npy](https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/embeddings.npy)
+*   **Words/Sentences:** [https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/sentences.npy](https://huggingface.co/datasets/sentence-transformers/all-MiniLM-L6-v2-embeddings/resolve/main/sentences.npy)
+
+Download these files and place them in a directory of your choice.
+
+### 2. Run the Inference Script
+
+Navigate to the `Proxi` directory and run the script from your terminal:
+
+```bash
+python examples/inference.py --embeddings /path/to/your/embeddings.npy --words /path/to/your/words.npy -k 5
+```
+
+**Arguments:**
+
+*   `--embeddings`: Path to the `.npy` file containing your numerical embeddings.
+*   `--words`: Path to the `.npy` file containing the corresponding text entries (words, sentences, or document IDs).
+*   `-k`: The number of nearest neighbors to retrieve for each query.
+
+### 3. Interactive Search
+
+Once the script loads the data and builds the Proxi and FAISS indexes, it will prompt you to enter a word or phrase:
+
+```
+Loading data...
+Loaded 384000 embeddings with dimension 384
+
+Building Proxi index...
+Building FAISS index...
+Loading sentence transformer model...
+
+==================================================
+Enter a word or phrase (or 'quit' to exit): your search query
+```
+
+Type your query and press Enter. The script will then display a table comparing the top-k results from Proxi and FAISS.
+
+```
+Similarity search results for: 'your search query'
++--------+-----------------+-----------------+
+|   Rank | Proxi Results   | FAISS Results   |
++========+=================+=================+
+|      1 | result_proxi_1  | result_faiss_1  |
+|      2 | result_proxi_2  | result_faiss_2  |
+|    ... | ...             | ...             |
++--------+-----------------+-----------------+
+```
+
+Enter 'quit' to exit the script.
+
+This example provides a hands-on way to see Proxi in action and compare its output directly with another popular library.
+
 ## 🏗️ Building and Development
 
 *   The core logic is in C++ (`src/proxi.cc`, `include/proxi.h`, `include/distance.hpp`).
