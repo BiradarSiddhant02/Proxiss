@@ -153,7 +153,7 @@ To use the inference script, you first need a dataset of embeddings and the corr
 For a quick demonstration, you can download pre-computed embeddings and words:
 *   **Embeddings and words:** [https://www.kaggle.com/datasets/siddhantbiradar/proxi-live-inference-dataset](https://www.kaggle.com/datasets/siddhantbiradar/proxi-live-inference-dataset)
 
-Download the zip file and unzip it in a directory of your choice. The variety of words is relatively small but enough for a demo
+Download the zip file and unzip it in a directory of your choice. The variety of words is relatively small but enough for a demo.
 
 ### 2. Run the Inference Script
 
