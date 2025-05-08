@@ -51,7 +51,7 @@ def main():
 
     # 3) Build & index
     t0 = perf_counter_ns()
-    p = proxi.Proxi(k=args.k, num_threads=args.threads, objective_function=args.objective)
+    p = proxi.ProxiFlat(k=args.k, num_threads=args.threads, objective_function=args.objective)
     p.index_data(X_train.astype(np.float32), docs_train)
     t1 = perf_counter_ns()
     index_ns = t1 - t0
