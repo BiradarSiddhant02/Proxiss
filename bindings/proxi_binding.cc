@@ -45,10 +45,15 @@ PYBIND11_MODULE(proxi, m) {
 
             const ssize_t n = arr.shape(0);
             const ssize_t d = arr.shape(1);
-            const float* data = arr.data();
 
-            // Call the new method that accepts a raw pointer
-            return self.find_indices_batched_from_ptr(data, n, d);
+            std::vector<std::vector<float>> vecs(n, std::vector<float>(d));
+            // Copy data from NumPy array to C++ vector
+            for (ssize_t i = 0; i < n; ++i) {
+                for (ssize_t j = 0; j < d; ++j) {
+                    vecs[i][j] = *arr.data(i, j);
+                }
+            }
+            return self.find_indices(vecs);
         }, py::call_guard<py::gil_scoped_release>())
 
         .def("find_docs_batched", [](ProxiFlat &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
@@ -58,10 +63,15 @@ PYBIND11_MODULE(proxi, m) {
 
             const ssize_t n = arr.shape(0);
             const ssize_t d = arr.shape(1);
-            const float* data = arr.data();
 
-            // Call the new method that accepts a raw pointer
-            return self.find_docs_batched_from_ptr(data, n, d);
+            std::vector<std::vector<float>> vecs(n, std::vector<float>(d));
+            // Copy data from NumPy array to C++ vector
+            for (ssize_t i = 0; i < n; ++i) {
+                for (ssize_t j = 0; j < d; ++j) {
+                    vecs[i][j] = *arr.data(i, j);
+                }
+            }
+            return self.find_docs(vecs);
         }, py::call_guard<py::gil_scoped_release>())
 
         .def("insert_data", &ProxiFlat::insert_data, py::call_guard<py::gil_scoped_release>());
