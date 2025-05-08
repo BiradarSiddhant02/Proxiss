@@ -31,11 +31,11 @@ PYBIND11_MODULE(proxi, m) {
             py::arg("objective_function") = "l2"
         )
 
-        .def("index_data", &ProxiFlat::index_data)
+        .def("index_data", &ProxiFlat::index_data, py::call_guard<py::gil_scoped_release>())
 
         // --- Single-query methods ---
-        .def("find_indices", py::overload_cast<const std::vector<float>&>(&ProxiFlat::find_indices))
-        .def("find_docs", py::overload_cast<const std::vector<float>&>(&ProxiFlat::find_docs))
+        .def("find_indices", py::overload_cast<const std::vector<float>&>(&ProxiFlat::find_indices), py::call_guard<py::gil_scoped_release>())
+        .def("find_docs", py::overload_cast<const std::vector<float>&>(&ProxiFlat::find_docs), py::call_guard<py::gil_scoped_release>())
 
         // --- Batched-query: NumPy to vector<vector<float>> via memcpy ---
         .def("find_indices_batched", [](ProxiFlat &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
@@ -47,13 +47,9 @@ PYBIND11_MODULE(proxi, m) {
             const ssize_t d = arr.shape(1);
             const float* data = arr.data();
 
-            std::vector<std::vector<float>> vecs(n, std::vector<float>(d));
-            for (ssize_t i = 0; i < n; ++i) {
-                std::memcpy(vecs[i].data(), data + i * d, d * sizeof(float));
-            }
-
-            return self.find_indices(vecs);
-        })
+            // Call the new method that accepts a raw pointer
+            return self.find_indices_batched_from_ptr(data, n, d);
+        }, py::call_guard<py::gil_scoped_release>())
 
         .def("find_docs_batched", [](ProxiFlat &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
             if (arr.ndim() != 2) {
@@ -64,13 +60,9 @@ PYBIND11_MODULE(proxi, m) {
             const ssize_t d = arr.shape(1);
             const float* data = arr.data();
 
-            std::vector<std::vector<float>> vecs(n, std::vector<float>(d));
-            for (ssize_t i = 0; i < n; ++i) {
-                std::memcpy(vecs[i].data(), data + i * d, d * sizeof(float));
-            }
+            // Call the new method that accepts a raw pointer
+            return self.find_docs_batched_from_ptr(data, n, d);
+        }, py::call_guard<py::gil_scoped_release>())
 
-            return self.find_docs(vecs);
-        })
-
-        .def("insert_data", &ProxiFlat::insert_data);
+        .def("insert_data", &ProxiFlat::insert_data, py::call_guard<py::gil_scoped_release>());
 }

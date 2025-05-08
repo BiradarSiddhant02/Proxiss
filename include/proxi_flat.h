@@ -31,12 +31,13 @@
 #include <string>
 #include <cstring>
 #include <span>
+#include <memory>
 
 class ProxiFlat {
 private:
 
     // Embeddings flattened
-    std::vector<float> m_embeddings_flat;
+    std::unique_ptr<float[]> m_embeddings_flat;
 
     // Document Chunks
     std::vector<std::string> m_documents;
@@ -71,6 +72,10 @@ public:
     // Method to return document chunk neighbours
     std::vector<std::string> find_docs(const std::vector<float>& query);
     std::vector<std::vector<std::string>> find_docs(const std::vector<std::vector<float>>& queries);
+
+    // Methods for batched queries directly from flat array data
+    std::vector<std::vector<size_t>> find_indices_batched_from_ptr(const float* queries_data, size_t num_queries, size_t features_per_query);
+    std::vector<std::vector<std::string>> find_docs_batched_from_ptr(const float* queries_data, size_t num_queries, size_t features_per_query);
 
     // Method to add new data
     void insert_data(const std::vector<float>& embedding, const std::string& text);

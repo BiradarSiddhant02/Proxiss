@@ -39,7 +39,7 @@ std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float>& query)
     for (long long int i = 0; i < num_samples; i++) {
         float distance = m_objective_function(
             std::span<const float>(query),
-            std::span<const float>(m_embeddings_flat).subspan(i * num_features, num_features)
+            std::span<const float>(m_embeddings_flat.get() + i * num_features, num_features)
         );
 
         bool should_insert = heap.size() < m_K;
@@ -106,13 +106,17 @@ void ProxiFlat::index_data(const std::vector<std::vector<float>>& embeddings, co
     m_num_samples = documents.size();
     m_num_features = embeddings[0].size();
 
-    m_embeddings_flat.resize(m_num_features * m_num_samples);
-    for (size_t i = 0; i < m_num_samples; i++) {
-        if (embeddings[i].size() != m_num_features)
-            throw std::runtime_error("Number of features is inconsistent.");
+    // Verify all embedings are of same size
+    for (const auto& embedding : embeddings){
+        if (embedding.size() != m_num_features)
+            throw std::runtime_error("Number of features are inconsistent across embeddings.");
+    }
 
+    m_embeddings_flat = std::make_unique<float[]>(m_num_features * m_num_samples);
+
+    for (size_t i = 0; i < m_num_samples; i++) {
         std::memcpy(
-            &m_embeddings_flat[i * m_num_features],
+            m_embeddings_flat.get() + i * m_num_features,
             embeddings[i].data(),
             m_num_features * sizeof(float)
         );
@@ -197,6 +201,46 @@ std::vector<std::vector<std::string>> ProxiFlat::find_docs(const std::vector<std
     return results;
 }
 
+std::vector<std::vector<size_t>> ProxiFlat::find_indices_batched_from_ptr(const float* queries_data, size_t num_queries, size_t features_per_query) {
+    omp_set_num_threads(m_num_threads);
+    std::vector<std::vector<size_t>> indices(num_queries);
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < num_queries; ++i) {
+        if (features_per_query != m_num_features)
+            throw std::runtime_error("Inconsistent number of features in batched query.");
+
+        // Create a temporary std::vector for the current query to pass to m_get_neighbours
+        // This still involves a copy for each query, but avoids copying the entire batch upfront.
+        const float* query_start = queries_data + i * features_per_query;
+        std::vector<float> current_query(query_start, query_start + features_per_query);
+        indices[i] = m_get_neighbours(current_query);
+    }
+    return indices;
+}
+
+std::vector<std::vector<std::string>> ProxiFlat::find_docs_batched_from_ptr(const float* queries_data, size_t num_queries, size_t features_per_query) {
+    omp_set_num_threads(m_num_threads);
+    std::vector<std::vector<std::string>> results(num_queries);
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < num_queries; ++i) {
+        if (features_per_query != m_num_features)
+            throw std::runtime_error("Inconsistent number of features in batched query.");
+
+        const float* query_start = queries_data + i * features_per_query;
+        std::vector<float> current_query(query_start, query_start + features_per_query);
+        
+        std::vector<size_t> neighbours = m_get_neighbours(current_query);
+        std::vector<std::string> current_docs(m_K);
+        for (size_t j = 0; j < m_K; ++j) {
+            current_docs[j] = m_documents[neighbours[j]];
+        }
+        results[i] = current_docs;
+    }
+    return results;
+}
+
 void ProxiFlat::insert_data(const std::vector<float>& embedding, const std::string& text) {
     /**
      * @brief Method to insert new data into the database.
@@ -208,12 +252,28 @@ void ProxiFlat::insert_data(const std::vector<float>& embedding, const std::stri
      * the vectors in the database
      */
 
-    // Check if the vector is of the same length of the dataset
     if (embedding.size() != m_num_features)
         throw std::invalid_argument("Invalid embedding vector size.");
 
-    m_embeddings_flat.insert(m_embeddings_flat.end(), embedding.begin(), embedding.end());
+    // Allocate new buffer with space for one more embedding
+    std::unique_ptr<float[]> new_buffer = std::make_unique<float[]>((m_num_samples + 1) * m_num_features);
+
+    // Copy existing embeddings
+    std::memcpy(
+        new_buffer.get(),
+        m_embeddings_flat.get(),
+        m_num_samples * m_num_features * sizeof(float)
+    );
+
+    // Copy the new embedding to the end
+    std::memcpy(
+        new_buffer.get() + m_num_samples * m_num_features,
+        embedding.data(),
+        m_num_features * sizeof(float)
+    );
+
+    // Move buffer and update internal state
+    m_embeddings_flat = std::move(new_buffer);
     m_documents.push_back(text);
-    
-    m_num_samples++;
+    ++m_num_samples;
 }
