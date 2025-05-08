@@ -37,7 +37,7 @@ include_directories(include)
 # --- pybind11 module ---
 pybind11_add_module(proxi 
     bindings/proxi_binding.cc
-    src/proxi.cc
+    src/proxi_flat.cc
 )
 
 # --- OpenMP support ---

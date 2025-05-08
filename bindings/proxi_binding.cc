@@ -18,12 +18,12 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <cstring>
-#include "proxi.h"
+#include "proxi_flat.h"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(proxi, m) {
-    py::class_<Proxi>(m, "Proxi")
+    py::class_<ProxiFlat>(m, "ProxiFlat")
         .def(
             py::init<size_t, size_t, const std::string&>(), 
             py::arg("k"), 
@@ -31,14 +31,14 @@ PYBIND11_MODULE(proxi, m) {
             py::arg("objective_function") = "l2"
         )
 
-        .def("index_data", &Proxi::index_data)
+        .def("index_data", &ProxiFlat::index_data)
 
         // --- Single-query methods ---
-        .def("find_indices", py::overload_cast<const std::vector<float>&>(&Proxi::find_indices))
-        .def("find_docs", py::overload_cast<const std::vector<float>&>(&Proxi::find_docs))
+        .def("find_indices", py::overload_cast<const std::vector<float>&>(&ProxiFlat::find_indices))
+        .def("find_docs", py::overload_cast<const std::vector<float>&>(&ProxiFlat::find_docs))
 
         // --- Batched-query: NumPy to vector<vector<float>> via memcpy ---
-        .def("find_indices_batched", [](Proxi &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
+        .def("find_indices_batched", [](ProxiFlat &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
             if (arr.ndim() != 2) {
                 throw std::runtime_error("Expected 2D array (N, D) for batched input");
             }
@@ -55,7 +55,7 @@ PYBIND11_MODULE(proxi, m) {
             return self.find_indices(vecs);
         })
 
-        .def("find_docs_batched", [](Proxi &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
+        .def("find_docs_batched", [](ProxiFlat &self, py::array_t<float, py::array::c_style | py::array::forcecast> arr) {
             if (arr.ndim() != 2) {
                 throw std::runtime_error("Expected 2D array (N, D) for batched input");
             }
@@ -72,5 +72,5 @@ PYBIND11_MODULE(proxi, m) {
             return self.find_docs(vecs);
         })
 
-        .def("insert_data", &Proxi::insert_data);
+        .def("insert_data", &ProxiFlat::insert_data);
 }

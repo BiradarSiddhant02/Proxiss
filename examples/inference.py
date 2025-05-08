@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import faiss
-from proxi import Proxi
+from proxi import ProxiFlat
 from tabulate import tabulate
 from sentence_transformers import SentenceTransformer
 
@@ -25,7 +25,7 @@ def main():
     embeddings_float32 = embeddings.astype(np.float32)
 
     print("\nBuilding Proxi index...")
-    proxi_index = Proxi(k=k, num_threads=4, objective_function="l2")
+    proxi_index = ProxiFlat(k=k, num_threads=4, objective_function="l2")
     proxi_index.index_data(embeddings_float32, text)
 
     print("Building FAISS index...")

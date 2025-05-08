@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from proxi import Proxi
+from proxi import ProxiFlat
 
 class TestProxi(unittest.TestCase):
     def setUp(self):
@@ -21,7 +21,7 @@ class TestProxi(unittest.TestCase):
         ], dtype=np.float32)
 
         self.k = 3
-        self.proxi = Proxi(k=self.k, num_threads=1, objective_function="l2")
+        self.proxi = ProxiFlat(k=self.k, num_threads=1, objective_function="l2")
         self.proxi.index_data(self.data, self.doc_ids)
 
     def test_find_indices(self):

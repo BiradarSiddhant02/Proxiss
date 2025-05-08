@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-// --- proxi.cc --- //
+// --- proxi_flat.cc --- //
 
-#include "proxi.h"
+#include "proxi_flat.h"
 #include "distance.hpp"
 
 // PRIVATE
-std::vector<size_t> Proxi::m_get_neighbours(const std::vector<float>& query) noexcept {
+std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float>& query) noexcept {
     /**
      * @brief Finds the indices of the K nearest neighbours for a given query vector.
-     * Uses the objective function defined during Proxi initialization.
+     * Uses the objective function defined during ProxiFlat initialization.
      * 
      * @param query The query vector.
      * @return A vector containing the indices of the K nearest neighbours.
@@ -61,7 +61,7 @@ std::vector<size_t> Proxi::m_get_neighbours(const std::vector<float>& query) noe
 }
 
 // PUBLIC
-Proxi::Proxi(const size_t k, const size_t num_threads, const std::string objective_function) 
+ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string objective_function) 
 :   m_num_samples(0),
     m_num_features(0),
     m_K(k), 
@@ -85,7 +85,7 @@ Proxi::Proxi(const size_t k, const size_t num_threads, const std::string objecti
     }
 }
 
-void Proxi::index_data(const std::vector<std::vector<float>>& embeddings, const std::vector<std::string>& documents) {
+void ProxiFlat::index_data(const std::vector<std::vector<float>>& embeddings, const std::vector<std::string>& documents) {
     /**
      * @brief Indexes the provided embeddings and corresponding documents.
      * Stores the data internally for subsequent nearest neighbour searches.
@@ -121,7 +121,7 @@ void Proxi::index_data(const std::vector<std::vector<float>>& embeddings, const 
     m_is_indexed = true;
 }
 
-std::vector<size_t> Proxi::find_indices(const std::vector<float>& query) {
+std::vector<size_t> ProxiFlat::find_indices(const std::vector<float>& query) {
     /**
      * @brief Finds the indices of the K nearest neighbours for a single query vector.
      * 
@@ -131,7 +131,7 @@ std::vector<size_t> Proxi::find_indices(const std::vector<float>& query) {
     return m_get_neighbours(query);
 }
 
-std::vector<std::vector<size_t>> Proxi::find_indices(const std::vector<std::vector<float>>& queries) {
+std::vector<std::vector<size_t>> ProxiFlat::find_indices(const std::vector<std::vector<float>>& queries) {
     /**
      * @brief Finds the indices of the K nearest neighbours for multiple query vectors in parallel.
      * 
@@ -156,7 +156,7 @@ std::vector<std::vector<size_t>> Proxi::find_indices(const std::vector<std::vect
     return indices;
 }
 
-std::vector<std::string> Proxi::find_docs(const std::vector<float>& query) {
+std::vector<std::string> ProxiFlat::find_docs(const std::vector<float>& query) {
     /**
      * @brief Finds the documents corresponding to the K nearest neighbours for a single query vector.
      * 
@@ -172,7 +172,7 @@ std::vector<std::string> Proxi::find_docs(const std::vector<float>& query) {
     return docs;
 }
 
-std::vector<std::vector<std::string>> Proxi::find_docs(const std::vector<std::vector<float>>& queries) {
+std::vector<std::vector<std::string>> ProxiFlat::find_docs(const std::vector<std::vector<float>>& queries) {
     /**
      * @brief Finds the documents corresponding to the K nearest neighbours for multiple query vectors in parallel.
      * 
@@ -197,7 +197,7 @@ std::vector<std::vector<std::string>> Proxi::find_docs(const std::vector<std::ve
     return results;
 }
 
-void Proxi::insert_data(const std::vector<float>& embedding, const std::string& text) {
+void ProxiFlat::insert_data(const std::vector<float>& embedding, const std::string& text) {
     /**
      * @brief Method to insert new data into the database.
      * 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// --- proxi.h --- //
+// --- proxi_flat.h --- //
 
 #pragma once
 
@@ -32,7 +32,7 @@
 #include <cstring>
 #include <span>
 
-class Proxi {
+class ProxiFlat {
 private:
 
     // Embeddings flattened
@@ -59,7 +59,7 @@ private:
     std::vector<size_t> m_get_neighbours(const std::vector<float>& query) noexcept;
     
 public:
-    Proxi(const size_t k, const size_t num_threads, const std::string objective_function="l2");
+    ProxiFlat(const size_t k, const size_t num_threads, const std::string objective_function="l2");
 
     // Method to index the data
     void index_data(const std::vector<std::vector<float>>& embeddings, const std::vector<std::string>& documents);
