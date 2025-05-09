@@ -201,6 +201,46 @@ std::vector<std::vector<std::string>> ProxiFlat::find_docs(const std::vector<std
     return results;
 }
 
+std::vector<std::vector<size_t>> ProxiFlat::find_indices_batched_from_ptr(const float* queries_data, size_t num_queries, size_t features_per_query) {
+    omp_set_num_threads(m_num_threads);
+    std::vector<std::vector<size_t>> indices(num_queries);
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < num_queries; ++i) {
+        if (features_per_query != m_num_features)
+            throw std::runtime_error("Inconsistent number of features in batched query.");
+
+        // Create a temporary std::vector for the current query to pass to m_get_neighbours
+        // This still involves a copy for each query, but avoids copying the entire batch upfront.
+        const float* query_start = queries_data + i * features_per_query;
+        std::vector<float> current_query(query_start, query_start + features_per_query);
+        indices[i] = m_get_neighbours(current_query);
+    }
+    return indices;
+}
+
+std::vector<std::vector<std::string>> ProxiFlat::find_docs_batched_from_ptr(const float* queries_data, size_t num_queries, size_t features_per_query) {
+    omp_set_num_threads(m_num_threads);
+    std::vector<std::vector<std::string>> results(num_queries);
+
+    #pragma omp parallel for
+    for (size_t i = 0; i < num_queries; ++i) {
+        if (features_per_query != m_num_features)
+            throw std::runtime_error("Inconsistent number of features in batched query.");
+
+        const float* query_start = queries_data + i * features_per_query;
+        std::vector<float> current_query(query_start, query_start + features_per_query);
+        
+        std::vector<size_t> neighbours = m_get_neighbours(current_query);
+        std::vector<std::string> current_docs(m_K);
+        for (size_t j = 0; j < m_K; ++j) {
+            current_docs[j] = m_documents[neighbours[j]];
+        }
+        results[i] = current_docs;
+    }
+    return results;
+}
+
 void ProxiFlat::insert_data(const std::vector<float>& embedding, const std::string& text) {
     /**
      * @brief Method to insert new data into the database.
