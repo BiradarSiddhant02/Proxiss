@@ -31,8 +31,21 @@
 #include <string>
 #include <cstring>
 #include <span>
+#include <filesystem>
+#include <cstdint>
+#include <fstream>
+
 
 class ProxiFlat {
+protected:
+    // Helper function to serialize an object of this class
+    std::vector<std::uint8_t> serialise();
+
+    template<typename T>
+    static std::vector<std::uint8_t> to_bytes(const T value) noexcept;
+
+    std::vector<std::uint8_t> strings_to_bytes(const std::vector<std::string>& strs) noexcept;
+
 private:
 
     // Embeddings flattened
@@ -56,10 +69,14 @@ private:
 
     std::function<float(std::span<const float>, std::span<const float>)> m_objective_function;
 
+    std::string m_objective_function_id;
+
     std::vector<size_t> m_get_neighbours(const std::vector<float>& query) noexcept;
     
 public:
     ProxiFlat(const size_t k, const size_t num_threads, const std::string objective_function="l2");
+
+    ProxiFlat(const std::string& path);
 
     // Method to index the data
     void index_data(const std::vector<std::vector<float>>& embeddings, const std::vector<std::string>& documents);
@@ -74,4 +91,9 @@ public:
 
     // Method to add new data
     void insert_data(const std::vector<float>& embedding, const std::string& text);
+
+    // Methods to save and load an object of this class
+    void save(const std::string& path);
+
+    void load(const std::string& path);
 };

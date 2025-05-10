@@ -16,6 +16,8 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/operators.h>
+#include <pybind11/functional.h> 
 #include <pybind11/numpy.h>
 #include <cstring>
 #include "proxi_flat.h"
@@ -24,11 +26,19 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(proxi, m) {
     py::class_<ProxiFlat>(m, "ProxiFlat")
+        // Parameterized Constructor
         .def(
             py::init<size_t, size_t, const std::string&>(), 
             py::arg("k"), 
             py::arg("num_threads"), 
             py::arg("objective_function") = "l2"
+        )
+
+        // Load Constructor
+        .def(
+            py::init<const std::string&>(),
+            py::arg("file_path"),
+            "Construct ProxiFlat by loading serialised data."
         )
 
         .def("index_data", &ProxiFlat::index_data)
@@ -72,5 +82,9 @@ PYBIND11_MODULE(proxi, m) {
             return self.find_docs(vecs);
         })
 
-        .def("insert_data", &ProxiFlat::insert_data);
+        .def("insert_data", &ProxiFlat::insert_data)
+
+        .def("save", &ProxiFlat::save)
+
+        .def("load", &ProxiFlat::load);
 }
