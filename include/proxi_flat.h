@@ -18,82 +18,88 @@
 
 #pragma once
 
-#include <vector>
-#include <queue>
-#include <iostream>
-#include <cmath>
-#include <unordered_set>
-#include <functional>
 #include <algorithm>
-#include <numeric>
-#include <utility>
-#include <omp.h>
-#include <string>
-#include <cstring>
-#include <span>
-#include <filesystem>
+#include <cmath>
 #include <cstdint>
+#include <cstring>
+#include <filesystem>
 #include <fstream>
-
+#include <functional>
+#include <iostream>
+#include <numeric>
+#include <omp.h>
+#include <queue>
+#include <span>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 class ProxiFlat {
 protected:
-    // Helper function to serialize an object of this class
-    std::vector<std::uint8_t> serialise();
+  // Helper function to serialize an object of this class
+  std::vector<std::uint8_t> serialise();
 
-    template<typename T>
-    static std::vector<std::uint8_t> to_bytes(const T value) noexcept;
+  template <typename T>
+  static std::vector<std::uint8_t> to_bytes(const T value) noexcept;
 
-    std::vector<std::uint8_t> strings_to_bytes(const std::vector<std::string>& strs) noexcept;
+  std::vector<std::uint8_t>
+  strings_to_bytes(const std::vector<std::string> &strs) noexcept;
 
 private:
+  // Embeddings flattened
+  std::vector<float> m_embeddings_flat;
 
-    // Embeddings flattened
-    std::vector<float> m_embeddings_flat;
+  // Document Chunks
+  std::vector<std::string> m_documents;
 
-    // Document Chunks
-    std::vector<std::string> m_documents;
+  // Dimensions
+  size_t m_num_samples;
+  size_t m_num_features;
 
-    // Dimensions
-    size_t m_num_samples;
-    size_t m_num_features;
+  // K
+  size_t m_K;
 
-    // K
-    size_t m_K;
+  // Flag to represent if the data indexed
+  bool m_is_indexed;
 
-    // Flag to represent if the data indexed
-    bool m_is_indexed;
+  // Number of threads to be used
+  size_t m_num_threads;
 
-    // Number of threads to be used
-    size_t m_num_threads;
+  std::function<float(std::span<const float>, std::span<const float>)>
+      m_objective_function;
 
-    std::function<float(std::span<const float>, std::span<const float>)> m_objective_function;
+  std::string m_objective_function_id;
 
-    std::string m_objective_function_id;
+  std::vector<size_t>
+  m_get_neighbours(const std::vector<float> &query) noexcept;
 
-    std::vector<size_t> m_get_neighbours(const std::vector<float>& query) noexcept;
-    
 public:
-    ProxiFlat(const size_t k, const size_t num_threads, const std::string objective_function="l2");
+  ProxiFlat(const size_t k, const size_t num_threads,
+            const std::string objective_function = "l2");
 
-    ProxiFlat(const std::string& path);
+  ProxiFlat(const std::string &path);
 
-    // Method to index the data
-    void index_data(const std::vector<std::vector<float>>& embeddings, const std::vector<std::string>& documents);
+  // Method to index the data
+  void index_data(const std::vector<std::vector<float>> &embeddings,
+                  const std::vector<std::string> &documents);
 
-    // Methods to return indices of neighbours
-    std::vector<size_t> find_indices(const std::vector<float>& query);
-    std::vector<std::vector<size_t>> find_indices(const std::vector<std::vector<float>>& queries);
+  // Methods to return indices of neighbours
+  std::vector<size_t> find_indices(const std::vector<float> &query);
+  std::vector<std::vector<size_t>>
+  find_indices(const std::vector<std::vector<float>> &queries);
 
-    // Method to return document chunk neighbours
-    std::vector<std::string> find_docs(const std::vector<float>& query);
-    std::vector<std::vector<std::string>> find_docs(const std::vector<std::vector<float>>& queries);
+  // Method to return document chunk neighbours
+  std::vector<std::string> find_docs(const std::vector<float> &query);
+  std::vector<std::vector<std::string>>
+  find_docs(const std::vector<std::vector<float>> &queries);
 
-    // Method to add new data
-    void insert_data(const std::vector<float>& embedding, const std::string& text);
+  // Method to add new data
+  void insert_data(const std::vector<float> &embedding,
+                   const std::string &text);
 
-    // Methods to save and load an object of this class
-    void save(const std::string& path);
+  // Methods to save and load an object of this class
+  void save(const std::string &path);
 
-    void load(const std::string& path);
+  void load(const std::string &path);
 };
