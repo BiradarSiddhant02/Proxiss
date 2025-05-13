@@ -25,111 +25,112 @@ namespace distance {
 // Euclidean Distance
 template <typename T>
 T euclidean(std::span<const T> A, std::span<const T> B) noexcept {
-  /**
-   * @brief Templated class to find euclidean distance between two input vectors
-   *
-   * @tparam T The data type of the vector elements.
-   * @param A Vector A
-   * @param B Vector B
-   *
-   * @return euclidean distance between A and B of type T
-   */
+    /**
+     * @brief Templated class to find euclidean distance between two input
+     * vectors
+     *
+     * @tparam T The data type of the vector elements.
+     * @param A Vector A
+     * @param B Vector B
+     *
+     * @return euclidean distance between A and B of type T
+     */
 
-  T distance = static_cast<T>(0.0f);
+    T distance = static_cast<T>(0.0f);
 
-  size_t length = A.size();
-  for (size_t i = 0; i < length; i++) {
-    T diff = A[i] - B[i];
-    distance += diff * diff;
-  }
+    size_t length = A.size();
+    for (size_t i = 0; i < length; i++) {
+        T diff = A[i] - B[i];
+        distance += diff * diff;
+    }
 
-  return static_cast<T>(std::sqrt(distance));
+    return static_cast<T>(std::sqrt(distance));
 }
 
 // Manhattan Distance
 template <typename T>
 T manhattan(std::span<const T> A, std::span<const T> B) noexcept {
-  /**
-   * @brief Computes the Manhattan distance (L1 norm) between two vectors A and
-   * B.
-   *
-   * @tparam T The data type of the vector elements.
-   * @param A First vector.
-   * @param B Second vector.
-   * @return The Manhattan distance between A and B.
-   */
+    /**
+     * @brief Computes the Manhattan distance (L1 norm) between two vectors A
+     * and B.
+     *
+     * @tparam T The data type of the vector elements.
+     * @param A First vector.
+     * @param B Second vector.
+     * @return The Manhattan distance between A and B.
+     */
 
-  T distance = static_cast<T>(0.0f);
+    T distance = static_cast<T>(0.0f);
 
-  size_t length = A.size();
-  for (size_t i = 0; i < length; i++) {
-    T diff = A[i] - B[i];
-    distance += std::abs(diff);
-  }
+    size_t length = A.size();
+    for (size_t i = 0; i < length; i++) {
+        T diff = A[i] - B[i];
+        distance += std::abs(diff);
+    }
 
-  return distance;
+    return distance;
 }
 
 // Helper Function to calculate Dot Product
 template <typename T>
 T dot(std::span<const T> A, std::span<const T> B) noexcept {
-  /**
-   * @brief Computes the dot product of two vectors A and B.
-   *
-   * @tparam T The data type of the vector elements.
-   * @param A First vector.
-   * @param B Second vector.
-   * @return The dot product of A and B.
-   */
+    /**
+     * @brief Computes the dot product of two vectors A and B.
+     *
+     * @tparam T The data type of the vector elements.
+     * @param A First vector.
+     * @param B Second vector.
+     * @return The dot product of A and B.
+     */
 
-  T result = static_cast<T>(0.0f);
+    T result = static_cast<T>(0.0f);
 
-  size_t length = A.size();
-  for (size_t i = 0; i < length; i++) {
-    result += A[i] * B[i];
-  }
+    size_t length = A.size();
+    for (size_t i = 0; i < length; i++) {
+        result += A[i] * B[i];
+    }
 
-  return result;
+    return result;
 }
 
 // Helper function to calculate l2 norm
 template <typename T> T l2_norm(std::span<const T> A) noexcept {
-  /**
-   * @brief Computes the L2 norm (Euclidean norm) of a vector A.
-   *
-   * @tparam T The data type of the vector elements.
-   * @param A The input vector.
-   * @return The L2 norm of A.
-   */
+    /**
+     * @brief Computes the L2 norm (Euclidean norm) of a vector A.
+     *
+     * @tparam T The data type of the vector elements.
+     * @param A The input vector.
+     * @return The L2 norm of A.
+     */
 
-  T norm = static_cast<T>(0.0f);
+    T norm = static_cast<T>(0.0f);
 
-  for (const T ele : A) {
-    norm += ele * ele;
-  }
+    for (const T ele : A) {
+        norm += ele * ele;
+    }
 
-  return static_cast<T>(std::sqrt(norm));
+    return static_cast<T>(std::sqrt(norm));
 }
 
 // Cosine Similarity
 template <typename T>
 T cosine(std::span<const T> A, std::span<const T> B) noexcept {
-  /**
-   * @brief Computes the cosine similarity between two vectors A and B.
-   * Cosine similarity is defined as (A . B) / (||A|| * ||B||).
-   *
-   * @tparam T The data type of the vector elements.
-   * @param A First vector.
-   * @param B Second vector.
-   * @return The cosine similarity between A and B. Returns NaN if either norm
-   * is zero.
-   */
+    /**
+     * @brief Computes the cosine similarity between two vectors A and B.
+     * Cosine similarity is defined as (A . B) / (||A|| * ||B||).
+     *
+     * @tparam T The data type of the vector elements.
+     * @param A First vector.
+     * @param B Second vector.
+     * @return The cosine similarity between A and B. Returns NaN if either norm
+     * is zero.
+     */
 
-  const T dotAB = distance::dot(A, B);
-  const T normA = distance::l2_norm(A);
-  const T normB = distance::l2_norm(B);
+    const T dotAB = distance::dot(A, B);
+    const T normA = distance::l2_norm(A);
+    const T normB = distance::l2_norm(B);
 
-  return dotAB / (normA * normB);
+    return dotAB / (normA * normB);
 }
 
 }; // namespace distance
