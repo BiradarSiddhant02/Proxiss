@@ -3,3 +3,4 @@ build
 proxi.egg*
 *.npy
 *.bin
+__pycache__
