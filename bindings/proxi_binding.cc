@@ -21,6 +21,8 @@
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <vector>
+#include <string>
 
 namespace py = pybind11;
 
@@ -52,12 +54,12 @@ PYBIND11_MODULE(proxi, m) {
                          "Expected 2D array (N, D) for batched input");
                  }
 
-                 const ssize_t n = arr.shape(0);
-                 const ssize_t d = arr.shape(1);
+                 const size_t n = arr.shape(0);
+                 const size_t d = arr.shape(1);
                  const float *data = arr.data();
 
                  std::vector<std::vector<float>> vecs(n, std::vector<float>(d));
-                 for (ssize_t i = 0; i < n; ++i) {
+                 for (size_t i = 0; i < n; ++i) {
                      std::memcpy(vecs[i].data(), data + i * d,
                                  d * sizeof(float));
                  }
@@ -74,12 +76,12 @@ PYBIND11_MODULE(proxi, m) {
                          "Expected 2D array (N, D) for batched input");
                  }
 
-                 const ssize_t n = arr.shape(0);
-                 const ssize_t d = arr.shape(1);
+                 const size_t n = arr.shape(0);
+                 const size_t d = arr.shape(1);
                  const float *data = arr.data();
 
                  std::vector<std::vector<float>> vecs(n, std::vector<float>(d));
-                 for (ssize_t i = 0; i < n; ++i) {
+                 for (size_t i = 0; i < n; ++i) {
                      std::memcpy(vecs[i].data(), data + i * d,
                                  d * sizeof(float));
                  }
