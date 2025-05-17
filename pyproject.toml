@@ -1,0 +1,15 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "proxi"
+version = "0.1.0"
+description = "Proxi: Accelerating nearest-neighbor search for high-dimensional data!"
+authors = [
+  {name = "Siddhant Biradar", email = "siddhant.biradar.pes@gmail.com"}
+]
+readme = "README.md"
+license = {text = "LICENSE"}
+requires-python = ">=3.9"
+dependencies = []
