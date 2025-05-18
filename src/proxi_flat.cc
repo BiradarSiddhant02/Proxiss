@@ -48,8 +48,7 @@ std::vector<std::uint8_t> ProxiFlat::serialise() {
      */
 
     if (!m_is_indexed)
-        throw std::runtime_error(
-            "Data is not indexed. Index data before saving");
+        throw std::runtime_error("Data is not indexed. Index data before saving");
 
     std::vector<std::uint8_t> object; // Final output
 
@@ -58,19 +57,16 @@ std::vector<std::uint8_t> ProxiFlat::serialise() {
         object.insert(object.end(), bytes.begin(), bytes.end());
     };
 
-    insert_bytes(ProxiFlat::to_bytes<size_t>(m_num_samples));  // Word 1
-    insert_bytes(ProxiFlat::to_bytes<size_t>(m_num_features)); // Word 2
-    insert_bytes(ProxiFlat::to_bytes<size_t>(m_K));            // Word 3
-    insert_bytes(ProxiFlat::to_bytes<size_t>(
-        static_cast<size_t>(m_is_indexed)));                  // Word 4
-    insert_bytes(ProxiFlat::to_bytes<size_t>(m_num_threads)); // Word 5
+    insert_bytes(ProxiFlat::to_bytes<size_t>(m_num_samples));                     // Word 1
+    insert_bytes(ProxiFlat::to_bytes<size_t>(m_num_features));                    // Word 2
+    insert_bytes(ProxiFlat::to_bytes<size_t>(m_K));                               // Word 3
+    insert_bytes(ProxiFlat::to_bytes<size_t>(static_cast<size_t>(m_is_indexed))); // Word 4
+    insert_bytes(ProxiFlat::to_bytes<size_t>(m_num_threads));                     // Word 5
 
     // Word 6: m_objective_function_id, padded to 8 bytes
     std::vector<std::uint8_t> fnc_id_serial(8, 0);
-    for (size_t i = 0; i < std::min<size_t>(8, m_objective_function_id.size());
-         ++i)
-        fnc_id_serial[i] =
-            static_cast<std::uint8_t>(m_objective_function_id[i]);
+    for (size_t i = 0; i < std::min<size_t>(8, m_objective_function_id.size()); ++i)
+        fnc_id_serial[i] = static_cast<std::uint8_t>(m_objective_function_id[i]);
     insert_bytes(fnc_id_serial);
 
     // ---- Serialize embeddings ----
@@ -91,8 +87,7 @@ std::vector<std::uint8_t> ProxiFlat::serialise() {
     return object;
 }
 
-template <typename T>
-std::vector<std::uint8_t> ProxiFlat::to_bytes(const T value) noexcept {
+template <typename T> std::vector<std::uint8_t> ProxiFlat::to_bytes(const T value) noexcept {
     /**
      * @brief Serializes a trivially copyable object into a vector of bytes.
      *
@@ -133,8 +128,7 @@ ProxiFlat::strings_to_bytes(const std::vector<std::string> &strs) noexcept {
 }
 
 // PRIVATE
-std::vector<size_t>
-ProxiFlat::m_get_neighbours(const std::vector<float> &query) noexcept {
+std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float> &query) noexcept {
     /**
      * @brief Finds the indices of the K nearest neighbours for a given query
      * vector. Uses the objective function defined during ProxiFlat
@@ -152,10 +146,9 @@ ProxiFlat::m_get_neighbours(const std::vector<float> &query) noexcept {
 
 #pragma omp for nowait
     for (long long int i = 0; i < num_samples; i++) {
-        float distance =
-            m_objective_function(std::span<const float>(query),
-                                 std::span<const float>(m_embeddings_flat)
-                                     .subspan(i * num_features, num_features));
+        float distance = m_objective_function(
+            std::span<const float>(query),
+            std::span<const float>(m_embeddings_flat).subspan(i * num_features, num_features));
 
         bool should_insert = heap.size() < m_K;
         bool should_replace = !should_insert && distance < heap.top().first;
@@ -177,24 +170,20 @@ ProxiFlat::m_get_neighbours(const std::vector<float> &query) noexcept {
 }
 
 // PUBLIC
-ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads,
-                     const std::string objective_function)
-    : m_num_samples(0), m_num_features(0), m_K(k), m_is_indexed(false),
-      m_num_threads(num_threads), m_objective_function_id(objective_function) {
+ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string objective_function)
+    : m_num_samples(0), m_num_features(0), m_K(k), m_is_indexed(false), m_num_threads(num_threads),
+      m_objective_function_id(objective_function) {
 
     if (objective_function == "l2") {
-        m_objective_function = [](std::span<const float> A,
-                                  std::span<const float> B) {
+        m_objective_function = [](std::span<const float> A, std::span<const float> B) {
             return distance::euclidean<float>(A, B);
         };
     } else if (objective_function == "l1") {
-        m_objective_function = [](std::span<const float> A,
-                                  std::span<const float> B) {
+        m_objective_function = [](std::span<const float> A, std::span<const float> B) {
             return distance::manhattan<float>(A, B);
         };
     } else if (objective_function == "cos") {
-        m_objective_function = [](std::span<const float> A,
-                                  std::span<const float> B) {
+        m_objective_function = [](std::span<const float> A, std::span<const float> B) {
             return distance::cosine<float>(A, B);
         };
     } else {
@@ -241,8 +230,8 @@ void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
         if (embeddings[i].size() != m_num_features)
             throw std::runtime_error("Number of features is inconsistent.");
 
-        std::memcpy(&m_embeddings_flat[i * m_num_features],
-                    embeddings[i].data(), m_num_features * sizeof(float));
+        std::memcpy(&m_embeddings_flat[i * m_num_features], embeddings[i].data(),
+                    m_num_features * sizeof(float));
     }
 
     m_is_indexed = true;
@@ -262,14 +251,13 @@ std::vector<size_t> ProxiFlat::find_indices(const std::vector<float> &query) {
     if (!m_is_indexed)
         throw std::runtime_error("Call index() before querying.");
     if (query.size() != m_num_features)
-        throw std::invalid_argument(
-            "Query vector dimensions mismatch dataset feature dimensions.");
+        throw std::invalid_argument("Query vector dimensions mismatch dataset feature dimensions.");
 
     return m_get_neighbours(query);
 }
 
-std::vector<std::vector<size_t>> ProxiFlat::find_indices(
-    const std::vector<std::vector<float>> &queries) noexcept {
+std::vector<std::vector<size_t>>
+ProxiFlat::find_indices(const std::vector<std::vector<float>> &queries) noexcept {
     /**
      * @brief Finds the indices of the K nearest neighbours for multiple query
      * vectors in parallel.
@@ -294,8 +282,7 @@ std::vector<std::vector<size_t>> ProxiFlat::find_indices(
     return indices;
 }
 
-std::vector<std::string>
-ProxiFlat::find_docs(const std::vector<float> &query) noexcept {
+std::vector<std::string> ProxiFlat::find_docs(const std::vector<float> &query) noexcept {
     /**
      * @brief Finds the documents corresponding to the K nearest neighbours for
      * a single query vector.
@@ -340,8 +327,7 @@ ProxiFlat::find_docs(const std::vector<std::vector<float>> &queries) noexcept {
     return results;
 }
 
-void ProxiFlat::insert_data(const std::vector<float> &embedding,
-                            const std::string &text) {
+void ProxiFlat::insert_data(const std::vector<float> &embedding, const std::string &text) {
     /**
      * @brief Method to insert new data into the database.
      *
@@ -356,8 +342,7 @@ void ProxiFlat::insert_data(const std::vector<float> &embedding,
     if (embedding.size() != m_num_features)
         throw std::invalid_argument("Invalid embedding vector size.");
 
-    m_embeddings_flat.insert(m_embeddings_flat.end(), embedding.begin(),
-                             embedding.end());
+    m_embeddings_flat.insert(m_embeddings_flat.end(), embedding.begin(), embedding.end());
     m_documents.push_back(text);
 
     m_num_samples++;
@@ -392,20 +377,16 @@ void ProxiFlat::save(const std::string &path_str) {
         // Open the file in binary mode
         std::ofstream out_file(file_path, std::ios::binary);
         if (!out_file.is_open())
-            throw std::runtime_error("Failed to open file for writing: " +
-                                     file_path.string());
+            throw std::runtime_error("Failed to open file for writing: " + file_path.string());
 
         // Write the bytes
-        out_file.write(reinterpret_cast<const char *>(bytes.data()),
-                       bytes.size());
+        out_file.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
         if (!out_file.good())
-            throw std::runtime_error("Failed to write data to file: " +
-                                     file_path.string());
+            throw std::runtime_error("Failed to write data to file: " + file_path.string());
 
         out_file.close();
     } catch (const std::filesystem::filesystem_error &error) {
-        throw std::runtime_error("Filesystem error: " +
-                                 std::string(error.what()));
+        throw std::runtime_error("Filesystem error: " + std::string(error.what()));
     } catch (const std::exception &e) {
         throw std::runtime_error("Save failed: " + std::string(e.what()));
     }
@@ -435,8 +416,7 @@ void ProxiFlat::load(const std::string &path_str) {
 
         std::ifstream in_file(file_path, std::ios::binary | std::ios::ate);
         if (!in_file.is_open()) {
-            throw std::runtime_error("Failed to open file: " +
-                                     file_path.string());
+            throw std::runtime_error("Failed to open file: " + file_path.string());
         }
 
         std::streamsize size = in_file.tellg();
@@ -444,8 +424,7 @@ void ProxiFlat::load(const std::string &path_str) {
 
         std::vector<std::uint8_t> buffer(size);
         if (!in_file.read(reinterpret_cast<char *>(buffer.data()), size)) {
-            throw std::runtime_error("Failed to read data from file: " +
-                                     file_path.string());
+            throw std::runtime_error("Failed to read data from file: " + file_path.string());
         }
         in_file.close();
 
@@ -471,23 +450,19 @@ void ProxiFlat::load(const std::string &path_str) {
         m_objective_function_id = std::string(fnc_id);
 
         if (m_objective_function_id.find("l2") != std::string::npos) {
-            m_objective_function = [](std::span<const float> A,
-                                      std::span<const float> B) {
+            m_objective_function = [](std::span<const float> A, std::span<const float> B) {
                 return distance::euclidean<float>(A, B);
             };
         } else if (m_objective_function_id.find("l1") != std::string::npos) {
-            m_objective_function = [](std::span<const float> A,
-                                      std::span<const float> B) {
+            m_objective_function = [](std::span<const float> A, std::span<const float> B) {
                 return distance::manhattan<float>(A, B);
             };
         } else if (m_objective_function_id.find("cos") != std::string::npos) {
-            m_objective_function = [](std::span<const float> A,
-                                      std::span<const float> B) {
+            m_objective_function = [](std::span<const float> A, std::span<const float> B) {
                 return distance::cosine<float>(A, B);
             };
         } else {
-            throw std::runtime_error("Unknown objective function: " +
-                                     m_objective_function_id);
+            throw std::runtime_error("Unknown objective function: " + m_objective_function_id);
         }
 
         // ---- Embeddings ----
@@ -495,13 +470,11 @@ void ProxiFlat::load(const std::string &path_str) {
         size_t embeddings_size = num_floats * sizeof(float);
 
         if (buffer.size() < offset + embeddings_size) {
-            throw std::runtime_error(
-                "File truncated: embeddings data incomplete");
+            throw std::runtime_error("File truncated: embeddings data incomplete");
         }
 
         m_embeddings_flat.resize(num_floats);
-        std::memcpy(m_embeddings_flat.data(), buffer.data() + offset,
-                    embeddings_size);
+        std::memcpy(m_embeddings_flat.data(), buffer.data() + offset, embeddings_size);
         offset += embeddings_size;
 
         // ---- Documents ----
@@ -511,28 +484,23 @@ void ProxiFlat::load(const std::string &path_str) {
         // Read lengths
         for (size_t i = 0; i < m_num_samples; ++i) {
             if (offset + sizeof(size_t) > buffer.size()) {
-                throw std::runtime_error(
-                    "File truncated: missing document length data");
+                throw std::runtime_error("File truncated: missing document length data");
             }
-            doc_lengths[i] =
-                *reinterpret_cast<const size_t *>(buffer.data() + offset);
+            doc_lengths[i] = *reinterpret_cast<const size_t *>(buffer.data() + offset);
             offset += sizeof(size_t);
         }
 
         // Read strings
         for (size_t len : doc_lengths) {
             if (offset + len > buffer.size()) {
-                throw std::runtime_error(
-                    "File truncated: missing document content");
+                throw std::runtime_error("File truncated: missing document content");
             }
-            m_documents.emplace_back(
-                reinterpret_cast<const char *>(buffer.data() + offset), len);
+            m_documents.emplace_back(reinterpret_cast<const char *>(buffer.data() + offset), len);
             offset += len;
         }
 
     } catch (const std::filesystem::filesystem_error &error) {
-        throw std::runtime_error("Filesystem error: " +
-                                 std::string(error.what()));
+        throw std::runtime_error("Filesystem error: " + std::string(error.what()));
     } catch (const std::exception &e) {
         throw std::runtime_error("Load failed: " + std::string(e.what()));
     }

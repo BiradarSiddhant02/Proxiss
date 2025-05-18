@@ -6,7 +6,10 @@ from time import perf_counter_ns
 try:
     import faiss
 except ImportError:
-    raise SystemExit("Could not import `faiss`. Install it via `pip install faiss-cpu` or `conda install -c pytorch faiss-cpu`.")
+    raise SystemExit(
+        "Could not import `faiss`. Install it via `pip install faiss-cpu` or `conda install -c pytorch faiss-cpu`."
+    )
+
 
 def get_unit(ns: int):
     if ns >= 1e9:
@@ -17,14 +20,25 @@ def get_unit(ns: int):
         return ns / 1e3, "us"
     return ns, "ns"
 
+
 def main():
     parser = argparse.ArgumentParser(description="Benchmark FAISS on a dataset")
     parser.add_argument("--X_path", required=True, help="Path to features (.npy)")
     parser.add_argument("--docs_path", required=True, help="Path to documents (.npy of strings)")
     parser.add_argument("-k", type=int, default=5, help="Number of neighbors")
     parser.add_argument("-t", "--threads", type=int, default=1, help="Number of threads")
-    parser.add_argument("--test_size", type=float, default=0.2, help="Fraction of data to hold out for queries")
-    parser.add_argument("--objective", choices=["l2", "l1", "cos"], default="l2", help="Distance function")
+    parser.add_argument(
+        "--test_size",
+        type=float,
+        default=0.2,
+        help="Fraction of data to hold out for queries",
+    )
+    parser.add_argument(
+        "--objective",
+        choices=["l2", "l1", "cos"],
+        default="l2",
+        help="Distance function",
+    )
     args = parser.parse_args()
 
     faiss.omp_set_num_threads(args.threads)
@@ -82,9 +96,13 @@ def main():
 
     # 7) Print summary
     print(f"\nLoaded   : X {X.shape}, docs {docs.shape} in {load_val:.3f}{load_unit}")
-    print(f"Split    : Train {X_train.shape[0]}, Test {X_test.shape[0]} in {split_val:.3f}{split_unit}")
-    print(f"Indexing : k={args.k}, threads={args.threads}, obj={args.objective} → {index_val:.3f}{index_unit} "
-          f"({index_ns_per_sample} ns/sample)")
+    print(
+        f"Split    : Train {X_train.shape[0]}, Test {X_test.shape[0]} in {split_val:.3f}{split_unit}"
+    )
+    print(
+        f"Indexing : k={args.k}, threads={args.threads}, obj={args.objective} → {index_val:.3f}{index_unit} "
+        f"({index_ns_per_sample} ns/sample)"
+    )
     print(f"Queries  : {len(X_test)} vectors")
     print(f" • find_indices_batched total: {q_val:.3f}{q_unit} → {per_q_val:.0f}{per_q_unit}/query")
     print(f" • find_docs_batched    total: {d_val:.3f}{d_unit} → {per_d_val:.0f}{per_d_unit}/query")
@@ -93,6 +111,7 @@ def main():
     for i in range(min(3, len(X_test))):
         print(f" • idxs: {I[i].tolist()} → docs: {docs_out[i]}")
     print("FAISS using", faiss.omp_get_max_threads(), "threads")
+
 
 if __name__ == "__main__":
     main()

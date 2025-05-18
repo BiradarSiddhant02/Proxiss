@@ -23,8 +23,7 @@
 namespace distance {
 
 // Euclidean Distance
-template <typename T>
-T euclidean(std::span<const T> A, std::span<const T> B) noexcept {
+template <typename T> T euclidean(std::span<const T> A, std::span<const T> B) noexcept {
     /**
      * @brief Templated class to find euclidean distance between two input
      * vectors
@@ -48,8 +47,7 @@ T euclidean(std::span<const T> A, std::span<const T> B) noexcept {
 }
 
 // Manhattan Distance
-template <typename T>
-T manhattan(std::span<const T> A, std::span<const T> B) noexcept {
+template <typename T> T manhattan(std::span<const T> A, std::span<const T> B) noexcept {
     /**
      * @brief Computes the Manhattan distance (L1 norm) between two vectors A
      * and B.
@@ -72,8 +70,7 @@ T manhattan(std::span<const T> A, std::span<const T> B) noexcept {
 }
 
 // Helper Function to calculate Dot Product
-template <typename T>
-T dot(std::span<const T> A, std::span<const T> B) noexcept {
+template <typename T> T dot(std::span<const T> A, std::span<const T> B) noexcept {
     /**
      * @brief Computes the dot product of two vectors A and B.
      *
@@ -113,8 +110,7 @@ template <typename T> T l2_norm(std::span<const T> A) noexcept {
 }
 
 // Cosine Similarity
-template <typename T>
-T cosine(std::span<const T> A, std::span<const T> B) noexcept {
+template <typename T> T cosine(std::span<const T> A, std::span<const T> B) noexcept {
     /**
      * @brief Computes the cosine similarity between two vectors A and B.
      * Cosine similarity is defined as (A . B) / (||A|| * ||B||).

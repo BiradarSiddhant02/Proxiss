@@ -2,7 +2,7 @@ import unittest
 import os
 import shutil
 import numpy as np
-import proxi  
+import proxi
 
 
 class TestProxiFlat(unittest.TestCase):
@@ -49,14 +49,10 @@ class TestProxiFlat(unittest.TestCase):
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    def _common_index_and_validate(
-        self, index_instance, embeddings_to_index, docs_to_index
-    ):
+    def _common_index_and_validate(self, index_instance, embeddings_to_index, docs_to_index):
         index_instance.index_data(embeddings_to_index.tolist(), docs_to_index)
         # Basic check after indexing (more detailed checks in specific query tests)
-        self.assertIsNotNone(
-            index_instance
-        )  # Placeholder, real checks in query methods
+        self.assertIsNotNone(index_instance)  # Placeholder, real checks in query methods
 
     def test_01_constructor_and_index_l2(self):
         """Test parameterized constructor and indexing with L2 distance."""
@@ -155,9 +151,7 @@ class TestProxiFlat(unittest.TestCase):
         self.assertIn(self.documents[0], docs_constructor)
 
         # Test loading via instance method - needs full file path
-        idx_loaded_method = proxi.ProxiFlat(
-            self.k, self.num_threads, "l2"
-        )  # Create empty
+        idx_loaded_method = proxi.ProxiFlat(self.k, self.num_threads, "l2")  # Create empty
         idx_loaded_method.load(self.save_file_path)
         docs_method = idx_loaded_method.find_docs(self.query_vector_exact)
         self.assertEqual(len(docs_method), self.k)
@@ -165,9 +159,7 @@ class TestProxiFlat(unittest.TestCase):
 
         # Check if K, num_features, num_samples are loaded correctly
         # Note: ProxiFlat class would need getters for these or we infer from behavior
-        self.assertEqual(
-            len(idx_loaded_constructor.find_indices(self.query_vector_exact)), self.k
-        )
+        self.assertEqual(len(idx_loaded_constructor.find_indices(self.query_vector_exact)), self.k)
 
     def test_08_constructor_and_index_l1(self):
         """Test with L1 distance."""
@@ -181,9 +173,7 @@ class TestProxiFlat(unittest.TestCase):
     def test_09_edge_case_empty_index_data(self):
         """Test indexing with empty data."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
-        with self.assertRaises(
-            ValueError
-        ):  # Or specific pybind11 exception if mapped
+        with self.assertRaises(ValueError):  # Or specific pybind11 exception if mapped
             idx.index_data([], [])
 
     def test_10_edge_case_mismatched_embeddings_docs(self):
@@ -220,13 +210,9 @@ class TestProxiFlat(unittest.TestCase):
         with self.assertRaises(ValueError):
             idx.find_indices(bad_query)
 
-        bad_batched_queries = np.array(
-            [4.0, 5.0], dtype=object
-        )  # Mixed dims
+        bad_batched_queries = np.array([4.0, 5.0], dtype=object)  # Mixed dims
         # Batched query check might be at numpy conversion or deeper in C++
-        with self.assertRaises(
-            ValueError
-        ):  # Or TypeError from pybind11 if conversion fails early
+        with self.assertRaises(ValueError):  # Or TypeError from pybind11 if conversion fails early
             idx.find_indices(bad_batched_queries)
 
     def test_14_save_before_index(self):

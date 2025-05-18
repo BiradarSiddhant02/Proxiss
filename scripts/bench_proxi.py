@@ -8,6 +8,7 @@ try:
 except ImportError:
     raise SystemExit("Could not import `proxi`. Build & install it first.")
 
+
 def get_unit(ns: int):
     """Return (value, unit) scaled from nanoseconds to the largest convenient unit."""
     if ns >= 1e9:
@@ -18,23 +19,32 @@ def get_unit(ns: int):
         return ns / 1e3, "us"
     return ns, "ns"
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Benchmark Proxi (vector-similarity retriever) on a dataset"
     )
     parser.add_argument("--X_path", required=True, help="Path to features (.npy)")
     parser.add_argument("--docs_path", required=True, help="Path to documents (.npy of strings)")
-    parser.add_argument("-k",    type=int,   default=5,    help="Number of neighbors")
-    parser.add_argument("-t",    "--threads", type=int, default=1, help="Number of threads")
-    parser.add_argument("--test_size", type=float, default=0.2,
-                        help="Fraction of data to hold out for queries")
-    parser.add_argument("--objective", choices=["l2", "l1", "cos"],
-                        default="l2", help="Distance function")
+    parser.add_argument("-k", type=int, default=5, help="Number of neighbors")
+    parser.add_argument("-t", "--threads", type=int, default=1, help="Number of threads")
+    parser.add_argument(
+        "--test_size",
+        type=float,
+        default=0.2,
+        help="Fraction of data to hold out for queries",
+    )
+    parser.add_argument(
+        "--objective",
+        choices=["l2", "l1", "cos"],
+        default="l2",
+        help="Distance function",
+    )
     args = parser.parse_args()
 
     # 1) Load data
     t0 = perf_counter_ns()
-    X = np.load(args.X_path)               # shape (N, D)
+    X = np.load(args.X_path)  # shape (N, D)
     docs = np.load(args.docs_path, allow_pickle=True)  # shape (N,)
     t1 = perf_counter_ns()
     load_ns = t1 - t0
@@ -77,9 +87,13 @@ def main():
 
     # 6) Print summary
     print(f"\nLoaded   : X {X.shape}, docs {docs.shape} in {load_val:.3f}{load_unit}")
-    print(f"Split    : Train {X_train.shape[0]}, Test {X_test.shape[0]} in {split_val:.3f}{split_unit}")
-    print(f"Indexing : k={args.k}, threads={args.threads}, obj={args.objective} → {index_val:.3f}{index_unit} "
-          f"({index_ns//X_train.shape[0]} ns/sample)")
+    print(
+        f"Split    : Train {X_train.shape[0]}, Test {X_test.shape[0]} in {split_val:.3f}{split_unit}"
+    )
+    print(
+        f"Indexing : k={args.k}, threads={args.threads}, obj={args.objective} → {index_val:.3f}{index_unit} "
+        f"({index_ns//X_train.shape[0]} ns/sample)"
+    )
     print(f"Queries  : {len(X_test)} vectors")
     print(f" • find_indices_batched total: {q_val:.3f}{q_unit} → {per_q_val:.0f}{per_q_unit}/query")
     print(f" • find_docs_batched    total: {d_val:.3f}{d_unit} → {per_d_val:.0f}{per_d_unit}/query")
@@ -88,6 +102,7 @@ def main():
     print("\nSample outputs (first 3 test points):")
     for i in range(min(3, len(X_test))):
         print(f" • idxs: {idxs[i]} → docs: {docs_out[i]}")
+
 
 if __name__ == "__main__":
     main()

@@ -5,10 +5,21 @@ from proxi import ProxiFlat
 from tabulate import tabulate
 from sentence_transformers import SentenceTransformer
 
+
 def main():
     parser = argparse.ArgumentParser(description="Compare Proxi and FAISS similarity search.")
-    parser.add_argument("--embeddings", type=str, required=True, help="Path to the .npy file with embeddings.")
-    parser.add_argument("--words", type=str, required=True, help="Path to the .npy file with text entries.")
+    parser.add_argument(
+        "--embeddings",
+        type=str,
+        required=True,
+        help="Path to the .npy file with embeddings.",
+    )
+    parser.add_argument(
+        "--words",
+        type=str,
+        required=True,
+        help="Path to the .npy file with text entries.",
+    )
     parser.add_argument("-k", type=int, required=True, help="Number of neighbors to retrieve.")
     args = parser.parse_args()
 
@@ -37,10 +48,10 @@ def main():
     model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
     while True:
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         user_input = input("Enter a word or phrase (or 'quit' to exit): ")
 
-        if user_input.lower() == 'quit':
+        if user_input.lower() == "quit":
             print("Exiting program. Goodbye!")
             break
 
@@ -60,6 +71,7 @@ def main():
 
         headers = ["Rank", "Proxi Results", "FAISS Results"]
         print(tabulate(table_data, headers=headers, tablefmt="grid"))
+
 
 if __name__ == "__main__":
     main()

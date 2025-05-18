@@ -40,11 +40,9 @@ protected:
     // Helper function to serialize an object of this class
     std::vector<std::uint8_t> serialise();
 
-    template <typename T>
-    static std::vector<std::uint8_t> to_bytes(const T value) noexcept;
+    template <typename T> static std::vector<std::uint8_t> to_bytes(const T value) noexcept;
 
-    std::vector<std::uint8_t>
-    strings_to_bytes(const std::vector<std::string> &strs) noexcept;
+    std::vector<std::uint8_t> strings_to_bytes(const std::vector<std::string> &strs) noexcept;
 
 private:
     // Embeddings flattened
@@ -66,13 +64,11 @@ private:
     // Number of threads to be used
     size_t m_num_threads;
 
-    std::function<float(std::span<const float>, std::span<const float>)>
-        m_objective_function;
+    std::function<float(std::span<const float>, std::span<const float>)> m_objective_function;
 
     std::string m_objective_function_id;
 
-    std::vector<size_t>
-    m_get_neighbours(const std::vector<float> &query) noexcept;
+    std::vector<size_t> m_get_neighbours(const std::vector<float> &query) noexcept;
 
 public:
     ProxiFlat(const size_t k, const size_t num_threads,
@@ -95,8 +91,7 @@ public:
     find_docs(const std::vector<std::vector<float>> &queries) noexcept;
 
     // Method to add new data
-    void insert_data(const std::vector<float> &embedding,
-                     const std::string &text);
+    void insert_data(const std::vector<float> &embedding, const std::string &text);
 
     // Methods to save and load an object of this class
     void save(const std::string &path);
