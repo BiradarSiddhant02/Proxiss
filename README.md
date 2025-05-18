@@ -1,22 +1,22 @@
-# Proxi: Blazing-Fast Nearest Neighbor Search 🚀
+# Proxi: Fast Nearest Neighbor Search
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Proxi** is a high-performance C++ library with Python bindings, designed to accelerate nearest-neighbor search for high-dimensional data. Whether you're working on semantic search, recommendation systems, anomaly detection, or any application requiring fast similarity searches, Proxi offers an efficient and easy-to-use solution.
+**Proxi** is a high-performance C++ library with Python bindings, designed to accelerate nearest-neighbor search for high-dimensional data. Whether you're working on semantic search, recommendation systems, anomaly detection, or any application requiring fast similarity searches, Proxi offers an efficient and easy-to-use solution, currently optimized for Linux environments.
 
-## 🌟 Key Features
+## Key Features
 
-*   **Blazing Fast:** Leverages C++ for core computations and OpenMP for parallel processing to deliver high-speed k-NN searches.
+*   **Fast Performance:** Leverages C++ for core computations and OpenMP for parallel processing to deliver high-speed k-NN searches.
 *   **Multiple Distance Metrics:** Supports common distance functions:
     *   Euclidean (L2)
     *   Manhattan (L1)
-    *   Cosine Similarity (normalized dot product)
-*   **Python-Friendly API:** Easy-to-use Python bindings powered by pybind11, making integration into your Python projects seamless.
+    *   Cosine Similarity
+*   **Python-Friendly API:** Easy-to-use Python bindings powered by pybind11, making integration into your Python projects seamless. The main indexing and search functionalities are available through the `ProxiFlat` module.
 *   **Batched Operations:** Efficiently process multiple queries at once with batched search methods.
 *   **Simple Indexing:** Straightforward data indexing process.
 *   **Lightweight:** Minimal dependencies, focused on delivering core k-NN functionality efficiently.
 
-## 🤔 Why Proxi?
+## Why Proxi?
 
 Searching for similar items in large, high-dimensional datasets is a common challenge. Traditional methods can be slow and computationally expensive. Proxi tackles this by:
 
@@ -24,47 +24,53 @@ Searching for similar items in large, high-dimensional datasets is a common chal
 *   Utilizing parallel processing to speed up computations on multi-core processors.
 *   Offering a simple API that doesn't require deep expertise in low-level programming.
 
-## 🛠️ Installation
+## Installation
 
-You can build and install Proxi from source.
+Proxi is built from source. Ensure you are in a Linux environment for optimal compatibility.
 
 ### Prerequisites
 
-*   A C++ compiler supporting C++20 (e.g., GCC, Clang, MSVC)
+*   A C++ compiler supporting C++20 (e.g., GCC, Clang)
 *   CMake (version 3.15 or higher)
 *   Python (version 3.8 or higher)
-*   Setuptools and Pybind11 (will be handled by the build process if `scikit-build-core` is used)
+*   OpenMP (usually included with GCC; may require separate installation for Clang, e.g., `sudo apt-get install libomp-dev` on Debian/Ubuntu)
 
 ### Building from Source
 
-1.  **Clone the repository (if you haven't already):**
+1.  **Clone the repository:**
     ```bash
     git clone https://github.com/BiradarSiddhant02/Proxi.git
     cd Proxi
     ```
 
-2.  **Install using pip:**
-    This is the recommended way as it handles dependencies and the build process.
+2.  **Set up a Python virtual environment (recommended):**
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate 
+    ```
+
+3.  **Install build dependencies:**
+    ```bash
+    pip install -r requirements.txt 
+    ```
+    (Ensure `requirements.txt` includes `scikit-build-core` and `pybind11`).
+
+4.  **Build and install Proxi:**
     ```bash
     pip install .
     ```
-    Alternatively, for development, you can use:
+    For development, you can use an editable install:
     ```bash
     pip install -e .
     ```
+    This command invokes `scikit-build-core` which uses `CMake` to compile the C++ core and create the Python extension.
 
-3.  **Manual build (alternative):**
-    ```bash
-    python setup.py build
-    python setup.py install
-    ```
+## Quick Start
 
-## 🚀 Quick Start
-
-Here's a simple example of how to use Proxi in Python:
+Here's a simple example of how to use Proxi in Python with the `ProxiFlat` module:
 
 ```python
-import proxi
+from proxi import ProxiFlat
 import numpy as np
 
 # 1. Sample data
@@ -76,12 +82,12 @@ embeddings = np.array([
 ], dtype=np.float32)
 doc_ids = ["doc_a", "doc_b", "doc_c", "doc_d"]
 
-# 2. Initialize Proxi
+# 2. Initialize ProxiFlat
 # Parameters: k (number of neighbors), num_threads, objective_function ("l2", "l1", or "cos")
-px = proxi.Proxi(k=2, num_threads=2, objective_function="l2")
+px = ProxiFlat(k=2, num_threads=2, objective_function="l2")
 
 # 3. Index your data
-px.index_data(embeddings.tolist(), doc_ids) # Proxi expects lists of lists for embeddings
+px.index_data(embeddings.tolist(), doc_ids) # ProxiFlat expects lists of lists for embeddings
 
 # 4. Prepare a query vector
 query_vector = np.array([1.5, 1.5], dtype=np.float32)
@@ -102,22 +108,22 @@ query_batch = np.array([
     [2.5, 2.5]
 ], dtype=np.float32)
 
-batch_indices = px.find_indices_batched(query_batch)
+batch_indices = px.find_indices_batched(query_batch.tolist()) # Pass as list of lists
 print(f"Batch indices: {batch_indices}")
 # Example output: Batch indices: [[0, 1], [2, 3]]
 
-batch_docs = px.find_docs_batched(query_batch)
+batch_docs = px.find_docs_batched(query_batch.tolist()) # Pass as list of lists
 print(f"Batch documents: {batch_docs}")
 # Example output: Batch documents: [['doc_a', 'doc_b'], ['doc_c', 'doc_d']]
 ```
 
-## ⏱️ Benchmarking
+## Benchmarking
 
-Proxi includes scripts to benchmark its performance against FAISS (a popular similarity search library) and to generate sample data.
+Proxi includes scripts to benchmark its performance and to generate sample data.
 
 ### 1. Generate Mock Data
 
-Use the `make_data.py` script to create synthetic datasets for benchmarking:
+Use the `scripts/make_data.py` script to create synthetic datasets for benchmarking:
 
 ```bash
 python scripts/make_data.py --N 10000 --D 128 --X_path X_data.npy --docs_path docs_data.npy
@@ -127,7 +133,7 @@ This will generate `X_data.npy` (feature vectors) and `docs_data.npy` (document 
 
 ### 2. Run Proxi Benchmark
 
-Use `bench_proxi.py` to test Proxi's performance:
+Use `scripts/bench_proxi.py` to test Proxi's performance:
 
 ```bash
 python scripts/bench_proxi.py --X_path X_data.npy --docs_path docs_data.npy -k 5 --threads 4 --objective l2
@@ -142,7 +148,7 @@ If you have FAISS installed (`pip install faiss-cpu` or `faiss-gpu`), you can ru
 python scripts/bench_faiss.py --X_path X_data.npy --docs_path docs_data.npy -k 5 --threads 4 --objective l2
 ```
 
-## 💡 Interactive Inference Example
+## Interactive Inference Example
 
 Proxi includes an interactive script `examples/inference.py` that allows you to perform similarity searches on your own data and compare results with FAISS.
 
@@ -150,10 +156,10 @@ Proxi includes an interactive script `examples/inference.py` that allows you to 
 
 To use the inference script, you first need a dataset of embeddings and the corresponding text/words they represent.
 
-For a quick demonstration, you can download pre-computed embeddings and words:
+For a demonstration, you can download pre-computed embeddings and words:
 *   **Embeddings and words:** [https://www.kaggle.com/datasets/siddhantbiradar/proxi-live-inference-dataset](https://www.kaggle.com/datasets/siddhantbiradar/proxi-live-inference-dataset)
 
-Download the zip file and unzip it in a directory of your choice. The variety of words is relatively small but enough for a demo.
+Download the zip file and unzip it.
 
 ### 2. Run the Inference Script
 
@@ -166,7 +172,7 @@ python examples/inference.py --embeddings /path/to/your/embeddings.npy --words /
 **Arguments:**
 
 *   `--embeddings`: Path to the `.npy` file containing your numerical embeddings.
-*   `--words`: Path to the `.npy` file containing the corresponding text entries (words, sentences, or document IDs).
+*   `--words`: Path to the `.npy` file containing the corresponding text entries.
 *   `-k`: The number of nearest neighbors to retrieve for each query.
 
 ### 3. Interactive Search
@@ -200,24 +206,25 @@ Similarity search results for: 'your search query'
 
 Enter 'quit' to exit the script.
 
-This example provides a hands-on way to see Proxi in action and compare its output directly with another popular library.
+This example provides a hands-on way to see Proxi in action.
 
-## 🏗️ Building and Development
+## Building and Development
 
-*   The core logic is in C++ (`src/proxi.cc`, `include/proxi.h`, `include/distance.hpp`).
+*   The core indexing and search logic is implemented in C++ within the `ProxiFlat` class (`src/proxi_flat.cc`, `include/proxi_flat.h`).
+*   Helper functions for distance calculations are in `include/distance.hpp`.
 *   Python bindings are defined in `bindings/proxi_binding.cc`.
 *   `CMakeLists.txt` manages the C++ build process.
-*   `setup.py` (using `scikit-build-core`) handles the Python package build and C++ compilation.
-*   Tests are located in `tests/test_proxi.py`. Run them using `unittest`:
+*   `pyproject.toml` and `scikit-build-core` handle the Python package build and C++ compilation.
+*   Tests are located in `tests/test_proxi_flat.py`. Run them using `unittest`:
     ```bash
-    python -m unittest tests/test_proxi.py
+    python -m unittest tests/test_proxi_flat.py
     ```
 
-## 📜 License
+## License
 
-Proxi is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE.txt) file for details (You might need to create this file if it doesn't exist and copy the Apache 2.0 text into it, or refer to the license text in `project.toml`).
+Proxi is licensed under the Apache License, Version 2.0. See the [LICENSE.txt](LICENSE.txt) file for details.
 
-## 🙌 Contributing
+## Contributing
 
 Contributions are welcome! If you have suggestions, bug reports, or want to contribute code, please feel free to open an issue or submit a pull request.
 
