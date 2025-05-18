@@ -87,12 +87,12 @@ public:
     // Methods to return indices of neighbours
     std::vector<size_t> find_indices(const std::vector<float> &query);
     std::vector<std::vector<size_t>>
-    find_indices(const std::vector<std::vector<float>> &queries);
+    find_indices(const std::vector<std::vector<float>> &queries) noexcept;
 
     // Method to return document chunk neighbours
-    std::vector<std::string> find_docs(const std::vector<float> &query);
+    std::vector<std::string> find_docs(const std::vector<float> &query) noexcept;
     std::vector<std::vector<std::string>>
-    find_docs(const std::vector<std::vector<float>> &queries);
+    find_docs(const std::vector<std::vector<float>> &queries) noexcept;
 
     // Method to add new data
     void insert_data(const std::vector<float> &embedding,

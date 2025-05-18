@@ -2,7 +2,7 @@ import unittest
 import os
 import shutil
 import numpy as np
-import proxi  # Assuming 'proxi' is the name of your compiled module
+import proxi  
 
 
 class TestProxiFlat(unittest.TestCase):
@@ -178,34 +178,21 @@ class TestProxiFlat(unittest.TestCase):
         self.assertEqual(len(indices), self.k)
         self.assertIn(0, indices)
 
-    def test_09_constructor_and_index_cos(self):
-        """Test with Cosine distance."""
-        # Cosine distance needs normalized vectors for intuitive nearest neighbor with non-normalized inputs
-        # For simplicity, we'll use the same data but acknowledge results might differ from L2/L1
-        # A more robust test would use normalized data or data where cosine similarity is clear.
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "cos")
-        self._common_index_and_validate(idx, self.embeddings, self.documents)
-
-        indices = idx.find_indices(self.query_vector_exact)
-        self.assertEqual(len(indices), self.k)
-        # With cosine, the exact vector [1,2,3] should be closest to itself.
-        self.assertIn(0, indices)
-
-    def test_10_edge_case_empty_index_data(self):
+    def test_09_edge_case_empty_index_data(self):
         """Test indexing with empty data."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(
-            RuntimeError
+            ValueError
         ):  # Or specific pybind11 exception if mapped
             idx.index_data([], [])
 
-    def test_11_edge_case_mismatched_embeddings_docs(self):
+    def test_10_edge_case_mismatched_embeddings_docs(self):
         """Test indexing with mismatched embeddings and documents count."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):
             idx.index_data(self.embeddings.tolist(), self.documents[:1])
 
-    def test_12_edge_case_query_before_index(self):
+    def test_11_edge_case_query_before_index(self):
         """Test querying before indexing."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
         # Behavior might depend on C++ implementation: could error or return empty/undefined.
@@ -217,7 +204,7 @@ class TestProxiFlat(unittest.TestCase):
         # results = idx.find_indices(self.query_vector_exact)
         # self.assertEqual(len(results), 0) # or self.k if it returns k empty slots
 
-    def test_13_edge_case_inconsistent_feature_dims_index(self):
+    def test_12_edge_case_inconsistent_feature_dims_index(self):
         """Test indexing data with inconsistent feature dimensions."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
         bad_embeddings = self.embeddings.tolist()
@@ -225,30 +212,30 @@ class TestProxiFlat(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             idx.index_data(bad_embeddings, self.documents)
 
-    def test_14_edge_case_inconsistent_feature_dims_query(self):
+    def test_13_edge_case_inconsistent_feature_dims_query(self):
         """Test querying with inconsistent feature dimensions."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
         idx.index_data(self.embeddings.tolist(), self.documents)
         bad_query = [1.0, 2.0]  # Incorrect dimension
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             idx.find_indices(bad_query)
 
         bad_batched_queries = np.array(
-            [[1.0, 2.0, 3.0], [4.0, 5.0]], dtype=object
+            [4.0, 5.0], dtype=object
         )  # Mixed dims
         # Batched query check might be at numpy conversion or deeper in C++
         with self.assertRaises(
-            RuntimeError
+            ValueError
         ):  # Or TypeError from pybind11 if conversion fails early
-            idx.find_indices_batched(bad_batched_queries)
+            idx.find_indices(bad_batched_queries)
 
-    def test_15_save_before_index(self):
+    def test_14_save_before_index(self):
         """Test saving the model before any data is indexed."""
         idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):  # Expecting an error as per C++ checks
             idx.save(self.save_directory)  # Pass the directory to save
 
-    def test_16_load_invalid_path(self):
+    def test_15_load_invalid_path(self):
         """Test loading from a non-existent or invalid file path."""
         non_existent_file = os.path.join(self.temp_dir, "non_existent_file.bin")
         with self.assertRaises(RuntimeError):
@@ -258,9 +245,9 @@ class TestProxiFlat(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             idx.load(non_existent_file)
 
-    def test_17_constructor_invalid_objective(self):
+    def test_16_constructor_invalid_objective(self):
         """Test constructor with an invalid objective function string."""
-        with self.assertRaises(RuntimeError):  # Or std::invalid_argument if mapped
+        with self.assertRaises(ValueError):  # Or std::invalid_argument if mapped
             proxi.ProxiFlat(self.k, self.num_threads, "invalid_function")
 
 

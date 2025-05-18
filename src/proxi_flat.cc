@@ -229,8 +229,7 @@ void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
         throw std::invalid_argument("Embeddings or Documents cannot be empty.");
 
     if (embeddings.size() != documents.size())
-        throw std::invalid_argument(
-            "Size of embeddings and corpus are unequal");
+        throw std::runtime_error("Size of embeddings and corpus are unequal");
 
     m_documents = documents;
 
@@ -256,12 +255,21 @@ std::vector<size_t> ProxiFlat::find_indices(const std::vector<float> &query) {
      *
      * @param query The query vector.
      * @return A vector containing the indices of the K nearest neighbours.
+     * @throws std::runtime_error If data is not indexed.
+     * @throws std::invalid_argument if dimensions of the query vector is unequal to stored vectors
      */
+
+    if (!m_is_indexed)
+        throw std::runtime_error("Call index() before querying.");
+    if (query.size() != m_num_features)
+        throw std::invalid_argument(
+            "Query vector dimensions mismatch dataset feature dimensions.");
+
     return m_get_neighbours(query);
 }
 
-std::vector<std::vector<size_t>>
-ProxiFlat::find_indices(const std::vector<std::vector<float>> &queries) {
+std::vector<std::vector<size_t>> ProxiFlat::find_indices(
+    const std::vector<std::vector<float>> &queries) noexcept {
     /**
      * @brief Finds the indices of the K nearest neighbours for multiple query
      * vectors in parallel.
@@ -280,16 +288,14 @@ ProxiFlat::find_indices(const std::vector<std::vector<float>> &queries) {
 
 #pragma omp parallel for
     for (long long int i = 0; i < num_queries; i++) {
-        if (queries[i].size() != m_num_features)
-            throw std::runtime_error("Inconsistent number of features.");
-
         indices[i] = find_indices(queries[i]);
     }
 
     return indices;
 }
 
-std::vector<std::string> ProxiFlat::find_docs(const std::vector<float> &query) {
+std::vector<std::string>
+ProxiFlat::find_docs(const std::vector<float> &query) noexcept {
     /**
      * @brief Finds the documents corresponding to the K nearest neighbours for
      * a single query vector.
@@ -308,7 +314,7 @@ std::vector<std::string> ProxiFlat::find_docs(const std::vector<float> &query) {
 }
 
 std::vector<std::vector<std::string>>
-ProxiFlat::find_docs(const std::vector<std::vector<float>> &queries) {
+ProxiFlat::find_docs(const std::vector<std::vector<float>> &queries) noexcept {
     /**
      * @brief Finds the documents corresponding to the K nearest neighbours for
      * multiple query vectors in parallel.
@@ -328,9 +334,6 @@ ProxiFlat::find_docs(const std::vector<std::vector<float>> &queries) {
 
 #pragma omp parallel for
     for (long long int i = 0; i < num_queries; i++) {
-        if (queries[i].size() != m_num_features)
-            throw std::runtime_error("Inconsistent number of features.");
-
         results[i] = find_docs(queries[i]);
     }
 
@@ -414,10 +417,10 @@ void ProxiFlat::load(const std::string &path_str) {
      * given path.
      *
      * Format:
-     * - Metadata: 6 * size_t + 8 bytes (objective function ID)
+     * - invalid_argument size_t + 8 bytes (objective function ID)
      * - Embeddings: m_num_samples * m_num_features * sizeof(float)
-     * - Text Documents:
-     *     - String lengths: m_num_samples * sizeof(size_t)
+     * - Text Documeninvalid_argument  - String lengths: m_num_samples *
+     * sizeof(size_t)
      *     - String contents: raw bytes
      */
     try {
