@@ -229,7 +229,8 @@ void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
     for (size_t i = 0; i < m_num_samples; i++) {
         if (embeddings[i].size() != m_num_features)
             throw std::runtime_error("Number of features is inconsistent.");
-
+    }
+    for (size_t i = 0; i < m_num_samples; i++) {
         std::memcpy(&m_embeddings_flat[i * m_num_features], embeddings[i].data(),
                     m_num_features * sizeof(float));
     }
