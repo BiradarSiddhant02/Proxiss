@@ -36,7 +36,50 @@ PYBIND11_MODULE(proxi, m) {
         .def(py::init<const std::string &>(), py::arg("file_path"),
              "Construct ProxiFlat by loading serialised data.")
 
-        .def("index_data", &ProxiFlat::index_data)
+        // Updated index_data binding (reverted to not take num_features explicitly)
+        .def("index_data",
+             [](ProxiFlat &self,
+                py::array_t<float, py::array::c_style | py::array::forcecast> embeddings_arr,
+                const std::vector<std::string> &documents) {
+
+                 std::vector<std::vector<float>> cpp_embeddings;
+
+                 if (embeddings_arr.size() == 0) {
+                     // Handles np.array([]) or np.empty((0, D))
+                     // cpp_embeddings remains empty. The C++ method will handle this.
+                     // If documents are provided, C++ method must handle empty embeddings with non-empty docs.
+                 } else {
+                     // If embeddings are provided, they must be a 2D array.
+                     if (embeddings_arr.ndim() != 2) {
+                         throw py::type_error("Embeddings: Expected a 2D NumPy array (N, D) if not empty.");
+                     }
+
+                     const size_t num_embeddings_rows = embeddings_arr.shape(0);
+                     const size_t dim_cols = embeddings_arr.shape(1); // Dimension is inferred here
+
+                     // Validate consistency between number of embeddings and documents if documents are provided
+                     // and embeddings are also provided.
+                     if (num_embeddings_rows > 0 && !documents.empty() && num_embeddings_rows != documents.size()) {
+                        throw py::value_error(
+                            "Number of embeddings rows must match the number of documents if both are non-empty and embeddings are provided.");
+                     }
+
+                     const float *embeddings_data_ptr = embeddings_arr.data();
+                     cpp_embeddings.resize(num_embeddings_rows, std::vector<float>(dim_cols));
+                     for (size_t i = 0; i < num_embeddings_rows; ++i) {
+                         std::memcpy(cpp_embeddings[i].data(), embeddings_data_ptr + i * dim_cols, dim_cols * sizeof(float));
+                     }
+                 }
+
+                 // Call the C++ method. Assumes C++ signature is:
+                 // void index_data(const std::vector<std::vector<float>>&, const std::vector<std::string>&)
+                 // The C++ method is responsible for handling m_num_features consistency internally.
+                 self.index_data(cpp_embeddings, documents);
+             },
+             py::arg("embeddings"), py::arg("documents"), // num_features removed from py::arg
+             "Indexes data. Expects:\\n"
+             "- embeddings: 2D NumPy array of floats (N, D), or an empty array. The dimension D is inferred from this array.\\n"
+             "- documents: list of N strings, or an empty list.")
 
         // --- Single-query methods ---
         .def("find_indices",
