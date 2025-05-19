@@ -7,15 +7,15 @@ from sentence_transformers import SentenceTransformer
 from time import perf_counter_ns
 
 
-def print_time(time):
-    if time > 1e3:
-        return f"{time / 1e3} us"
-    elif time > 1e6:
-        return f"{time / 1e6} ms"
-    elif time > 1e9:
-        return f"{time / 1e9} s"
+def print_time(time_ns):
+    if time_ns > 1e9:
+        return f"{time_ns / 1e9:.3f} s"
+    elif time_ns > 1e6:
+        return f"{time_ns / 1e6:.3f} ms"
+    elif time_ns > 1e3:
+        return f"{time_ns / 1e3:.3f} us"
     else:
-        return f"{time} ns"
+        return f"{time_ns} ns"
 
 
 def main():
