@@ -16,117 +16,113 @@
 
 // --- distance.hpp --- //
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <immintrin.h>
 #include <span>
-#include <vector>
 
-namespace distance {
-
-// Euclidean Distance
-template <typename T> T euclidean(std::span<const T> A, std::span<const T> B) noexcept {
-    /**
-     * @brief Templated class to find euclidean distance between two input
-     * vectors
-     *
-     * @tparam T The data type of the vector elements.
-     * @param A Vector A
-     * @param B Vector B
-     *
-     * @return euclidean distance between A and B of type T
-     */
-
-    T distance = static_cast<T>(0.0f);
-
+inline float euclidean_distance(std::span<const float> A, std::span<const float> B) {
     size_t length = A.size();
-    for (size_t i = 0; i < length; i++) {
-        T diff = A[i] - B[i];
+    __m256 sum = _mm256_setzero_ps();
+    size_t i = 0;
+
+    for (; i + 8 <= length; i += 8) {
+        __m256 va = _mm256_loadu_ps(A.data() + i);
+        __m256 vb = _mm256_loadu_ps(B.data() + i);
+        __m256 diff = _mm256_sub_ps(va, vb);
+        __m256 sq = _mm256_mul_ps(diff, diff);
+        sum = _mm256_add_ps(sum, sq);
+    }
+
+    float buffer[8];
+    _mm256_storeu_ps(buffer, sum);
+    float distance = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
+                     buffer[6] + buffer[7];
+
+    for (; i < length; i++) {
+        float diff = A[i] - B[i];
         distance += diff * diff;
     }
 
-    return static_cast<T>(std::sqrt(distance));
+    return std::sqrt(distance);
 }
 
-// Manhattan Distance
-template <typename T> T manhattan(std::span<const T> A, std::span<const T> B) noexcept {
-    /**
-     * @brief Computes the Manhattan distance (L1 norm) between two vectors A
-     * and B.
-     *
-     * @tparam T The data type of the vector elements.
-     * @param A First vector.
-     * @param B Second vector.
-     * @return The Manhattan distance between A and B.
-     */
-
-    T distance = static_cast<T>(0.0f);
-
+inline float manhattan_distance(std::span<const float> A, std::span<const float> B) {
     size_t length = A.size();
-    for (size_t i = 0; i < length; i++) {
-        T diff = A[i] - B[i];
-        distance += std::abs(diff);
+    __m256 sum = _mm256_setzero_ps();
+    size_t i = 0;
+
+    for (; i + 8 <= length; i += 8) {
+        __m256 va = _mm256_loadu_ps(A.data() + i);
+        __m256 vb = _mm256_loadu_ps(B.data() + i);
+        __m256 diff = _mm256_sub_ps(va, vb);
+        __m256 abs_diff = _mm256_andnot_ps(_mm256_set1_ps(-0.0f), diff); // abs(x)
+        sum = _mm256_add_ps(sum, abs_diff);
+    }
+
+    float buffer[8];
+    _mm256_storeu_ps(buffer, sum);
+    float distance = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
+                     buffer[6] + buffer[7];
+
+    for (; i < length; i++) {
+        distance += std::fabs(A[i] - B[i]);
     }
 
     return distance;
 }
 
-// Helper Function to calculate Dot Product
-template <typename T> T dot(std::span<const T> A, std::span<const T> B) noexcept {
-    /**
-     * @brief Computes the dot product of two vectors A and B.
-     *
-     * @tparam T The data type of the vector elements.
-     * @param A First vector.
-     * @param B Second vector.
-     * @return The dot product of A and B.
-     */
-
-    T result = static_cast<T>(0.0f);
-
+inline float dot(std::span<const float> A, std::span<const float> B) {
     size_t length = A.size();
-    for (size_t i = 0; i < length; i++) {
-        result += A[i] * B[i];
+    __m256 sum = _mm256_setzero_ps();
+    size_t i = 0;
+
+    for (; i + 8 <= length; i += 8) {
+        __m256 va = _mm256_loadu_ps(A.data() + i);
+        __m256 vb = _mm256_loadu_ps(B.data() + i);
+        __m256 prod = _mm256_mul_ps(va, vb);
+        sum = _mm256_add_ps(sum, prod);
     }
 
-    return result;
-}
+    float buffer[8];
+    _mm256_storeu_ps(buffer, sum);
+    float dot_sum = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
+                    buffer[6] + buffer[7];
 
-// Helper function to calculate l2 norm
-template <typename T> T l2_norm(std::span<const T> A) noexcept {
-    /**
-     * @brief Computes the L2 norm (Euclidean norm) of a vector A.
-     *
-     * @tparam T The data type of the vector elements.
-     * @param A The input vector.
-     * @return The L2 norm of A.
-     */
-
-    T norm = static_cast<T>(0.0f);
-
-    for (const T ele : A) {
-        norm += ele * ele;
+    for (; i < length; i++) {
+        dot_sum += A[i] * B[i];
     }
 
-    return static_cast<T>(std::sqrt(norm));
+    return dot_sum;
 }
 
-// Cosine Similarity
-template <typename T> T cosine(std::span<const T> A, std::span<const T> B) noexcept {
-    /**
-     * @brief Computes the cosine similarity between two vectors A and B.
-     * Cosine similarity is defined as (A . B) / (||A|| * ||B||).
-     *
-     * @tparam T The data type of the vector elements.
-     * @param A First vector.
-     * @param B Second vector.
-     * @return The cosine similarity between A and B. Returns NaN if either norm
-     * is zero.
-     */
+inline float l2_norm(std::span<const float> A) {
+    size_t length = A.size();
+    __m256 sum = _mm256_setzero_ps();
+    size_t i = 0;
 
-    const T dotAB = distance::dot(A, B);
-    const T normA = distance::l2_norm(A);
-    const T normB = distance::l2_norm(B);
+    for (; i + 8 <= length; i += 8) {
+        __m256 v = _mm256_loadu_ps(A.data() + i);
+        sum = _mm256_fmadd_ps(v, v, sum);
+    }
 
+    float buffer[8];
+    _mm256_storeu_ps(buffer, sum);
+    float sum_of_squares = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
+                           buffer[6] + buffer[7];
+
+    for (; i < length; i++) {
+        sum_of_squares += A[i] * A[i];
+    }
+
+    return std::sqrt(sum_of_squares);
+}
+
+inline float cosine_distance(std::span<const float> A, std::span<const float> B) {
+    float dotAB = dot(A, B);
+    float normA = l2_norm(A);
+    float normB = l2_norm(B);
     return dotAB / (normA * normB);
 }
-
-}; // namespace distance

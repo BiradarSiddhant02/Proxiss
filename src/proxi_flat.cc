@@ -192,15 +192,15 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
 
     if (objective_function == "l2") {
         m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-            return distance::euclidean<float>(A, B);
+            return euclidean_distance(A, B);
         };
     } else if (objective_function == "l1") {
         m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-            return distance::manhattan<float>(A, B);
+            return manhattan_distance(A, B);
         };
     } else if (objective_function == "cos") {
         m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-            return distance::cosine<float>(A, B);
+            return cosine_distance(A, B);
         };
     } else {
         throw std::invalid_argument("Invalid Distance function.");
@@ -510,15 +510,15 @@ void ProxiFlat::load(const std::string &path_str) {
 
         if (m_objective_function_id.find("l2") != std::string::npos) {
             m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return distance::euclidean<float>(A, B);
+                return euclidean_distance(A, B);
             };
         } else if (m_objective_function_id.find("l1") != std::string::npos) {
             m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return distance::manhattan<float>(A, B);
+                return manhattan_distance(A, B);
             };
         } else if (m_objective_function_id.find("cos") != std::string::npos) {
             m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return distance::cosine<float>(A, B);
+                return cosine_distance(A, B);
             };
         } else {
             throw std::runtime_error("Unknown objective function: " + m_objective_function_id);

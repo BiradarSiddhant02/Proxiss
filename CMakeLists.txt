@@ -58,7 +58,7 @@ if(MSVC)
         target_compile_options(proxi PRIVATE /arch:AVX)
     endif()
 else()
-    target_compile_options(proxi PRIVATE -O3 -march=native)
+    target_compile_options(proxi PRIVATE -O3 -march=native -mavx)
 endif()
 
 # Apply OpenMP to the target appropriately for each platform
