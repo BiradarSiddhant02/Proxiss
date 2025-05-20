@@ -518,17 +518,11 @@ void ProxiFlat::load(const std::string &path_str) {
         m_objective_function_id = std::string(fnc_id);
 
         if (m_objective_function_id.find("l2") != std::string::npos) {
-            m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return euclidean_distance(A, B);
-            };
+            m_objective_function = euclidean_distance;
         } else if (m_objective_function_id.find("l1") != std::string::npos) {
-            m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return manhattan_distance(A, B);
-            };
+            m_objective_function = manhattan_distance;
         } else if (m_objective_function_id.find("cos") != std::string::npos) {
-            m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return cosine_similarity(A, B);
-            };
+            m_objective_function = cosine_similarity;
         } else {
             throw std::runtime_error("Unknown objective function: " + m_objective_function_id);
         }
