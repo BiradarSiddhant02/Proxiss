@@ -191,20 +191,29 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
      */
 
     if (objective_function == "l2") {
-        m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-            return euclidean_distance(A, B);
-        };
+        m_objective_function = euclidean_distance;
     } else if (objective_function == "l1") {
-        m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-            return manhattan_distance(A, B);
-        };
+        m_objective_function = manhattan_distance;
     } else if (objective_function == "cos") {
-        m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-            return cosine_distance(A, B);
-        };
+        m_objective_function = cosine_distance;
     } else {
         throw std::invalid_argument("Invalid Distance function.");
     }
+    // if (objective_function == "l2") {
+    //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
+    //         return euclidean_distance(A, B);
+    //     };
+    // } else if (objective_function == "l1") {
+    //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
+    //         return manhattan_distance(A, B);
+    //     };
+    // } else if (objective_function == "cos") {
+    //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
+    //         return cosine_distance(A, B);
+    //     };
+    // } else {
+    //     throw std::invalid_argument("Invalid Distance function.");
+    // }
 }
 
 ProxiFlat::ProxiFlat(const std::string &path)
