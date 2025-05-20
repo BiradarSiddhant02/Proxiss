@@ -80,7 +80,7 @@ def main():
 
     # 5) find_indices_batched
     t0 = perf_counter_ns()
-    D, I = index.search(X_test.astype(np.float32), args.k)
+    _, I = index.search(X_test.astype(np.float32), args.k)
     t1 = perf_counter_ns()
     q_ns = t1 - t0
     q_val, q_unit = get_unit(q_ns)
@@ -88,6 +88,7 @@ def main():
 
     # 6) find_docs_batched
     t0 = perf_counter_ns()
+    _, I = index.search(X_test.astype(np.float32), args.k)
     docs_out = [[docs_train[i] for i in row] for row in I]
     t1 = perf_counter_ns()
     d_ns = t1 - t0
