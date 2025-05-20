@@ -156,9 +156,9 @@ inline float l2_norm(std::span<const float> A) {
     return std::sqrt(sum_of_squares);
 }
 
-inline float cosine_distance(std::span<const float> A, std::span<const float> B) {
+inline float cosine_similarity(std::span<const float> A, std::span<const float> B) {
     /**
-     * @brief Calculates Cosine Distance between the given input vectors.
+     * @brief Calculates Cosine Similarity between the given input vectors.
      * 
      * @param A Input vector A
      * @param B Input vector B

@@ -195,7 +195,7 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
     } else if (objective_function == "l1") {
         m_objective_function = manhattan_distance;
     } else if (objective_function == "cos") {
-        m_objective_function = cosine_distance;
+        m_objective_function = cosine_similarity;
     } else {
         throw std::invalid_argument("Invalid Distance function.");
     }
@@ -527,7 +527,7 @@ void ProxiFlat::load(const std::string &path_str) {
             };
         } else if (m_objective_function_id.find("cos") != std::string::npos) {
             m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-                return cosine_distance(A, B);
+                return cosine_similarity(A, B);
             };
         } else {
             throw std::runtime_error("Unknown objective function: " + m_objective_function_id);
