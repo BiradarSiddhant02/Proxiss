@@ -24,6 +24,15 @@
 #include <span>
 
 inline float euclidean_distance(std::span<const float> A, std::span<const float> B) {
+    /**
+     * @brief Calculates Euclidean distance between the given input vectors.
+     * 
+     * @param A Input vector A
+     * @param B Input vector B
+     * 
+     * @returns A float which is the euclidean distance between the two input vectors.
+     */
+
     size_t length = A.size();
     __m256 sum = _mm256_setzero_ps();
     size_t i = 0;
@@ -50,6 +59,15 @@ inline float euclidean_distance(std::span<const float> A, std::span<const float>
 }
 
 inline float manhattan_distance(std::span<const float> A, std::span<const float> B) {
+    /**
+     * @brief Calculates Manhattan distance between the given input vectors.
+     * 
+     * @param A Input vector A
+     * @param B Input vector B
+     * 
+     * @returns A float which is the euclidean distance between the two input vectors.
+     */
+
     size_t length = A.size();
     __m256 sum = _mm256_setzero_ps();
     size_t i = 0;
@@ -75,6 +93,15 @@ inline float manhattan_distance(std::span<const float> A, std::span<const float>
 }
 
 inline float dot(std::span<const float> A, std::span<const float> B) {
+    /**
+     * @brief Calculates Dot Product between the given input vectors.
+     * 
+     * @param A Input vector A
+     * @param B Input vector B
+     * 
+     * @returns A float which is the euclidean distance between the two input vectors.
+     */
+
     size_t length = A.size();
     __m256 sum = _mm256_setzero_ps();
     size_t i = 0;
@@ -99,6 +126,15 @@ inline float dot(std::span<const float> A, std::span<const float> B) {
 }
 
 inline float l2_norm(std::span<const float> A) {
+    /**
+     * @brief Calculates L2-Norm of the given input vector.
+     * 
+     * @param A Input vector A
+     * @param B Input vector B
+     * 
+     * @returns A float which is the euclidean distance between the two input vectors.
+     */
+
     size_t length = A.size();
     __m256 sum = _mm256_setzero_ps();
     size_t i = 0;
@@ -121,6 +157,15 @@ inline float l2_norm(std::span<const float> A) {
 }
 
 inline float cosine_distance(std::span<const float> A, std::span<const float> B) {
+    /**
+     * @brief Calculates Cosine Distance between the given input vectors.
+     * 
+     * @param A Input vector A
+     * @param B Input vector B
+     * 
+     * @returns A float which is the euclidean distance between the two input vectors.
+     */
+
     float dotAB = dot(A, B);
     float normA = l2_norm(A);
     float normB = l2_norm(B);
