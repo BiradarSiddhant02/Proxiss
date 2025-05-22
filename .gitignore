@@ -4,3 +4,4 @@ proxi.egg*
 *.npy
 *.bin
 __pycache__
+dist
