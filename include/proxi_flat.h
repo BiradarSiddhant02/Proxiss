@@ -121,18 +121,12 @@ public:
               const std::string objective_function = "l2");
 
     /**
-     * @brief Constructs a ProxiFlat object by loading it from a saved file.
-     * @param path Path to the serialized ProxiFlat data file.
-     * @throws std::runtime_error if loading fails (e.g., file not found, corrupted data).
-     */
-    ProxiFlat(const std::string &path);
-
-    /**
      * @brief Indexes the provided embeddings and their corresponding documents.
      * The number of features (embedding dimension) is inferred from the first embedding.
      * @param embeddings A vector of embeddings (each embedding is a vector of floats).
      * @param documents A vector of document strings, corresponding to each embedding.
-     * @throws std::invalid_argument if embeddings or documents are empty, or if their sizes mismatch.
+     * @throws std::invalid_argument if embeddings or documents are empty, or if their sizes
+     * mismatch.
      * @throws std::runtime_error if embeddings have inconsistent dimensions.
      */
     void index_data(const std::vector<std::vector<float>> &embeddings,
@@ -149,7 +143,8 @@ public:
     /**
      * @brief Finds the indices of the K nearest neighbours for a batch of query embeddings.
      * @param queries A vector of query embeddings.
-     * @return std::vector<std::vector<size_t>> For each query, a vector of K nearest neighbour indices.
+     * @return std::vector<std::vector<size_t>> For each query, a vector of K nearest neighbour
+     * indices.
      * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
      * @note The noexcept specifier might be violated if the single find_indices call throws.
      */
@@ -168,7 +163,8 @@ public:
     /**
      * @brief Finds the K nearest documents for a batch of query embeddings.
      * @param queries A vector of query embeddings.
-     * @return std::vector<std::vector<std::string>> For each query, a vector of K nearest documents.
+     * @return std::vector<std::vector<std::string>> For each query, a vector of K nearest
+     * documents.
      * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
      * @note The noexcept specifier might be violated if the single find_docs call throws.
      */
@@ -180,7 +176,8 @@ public:
      * @param embedding The embedding to insert.
      * @param text The document text to insert.
      * @throws std::invalid_argument if the embedding dimension mismatches the existing data.
-     * @throws std::runtime_error if data was not indexed prior to insertion (if m_num_features is 0).
+     * @throws std::runtime_error if data was not indexed prior to insertion (if m_num_features is
+     * 0).
      */
     void insert_data(const std::vector<float> &embedding, const std::string &text);
 
@@ -188,15 +185,17 @@ public:
      * @brief Saves the current ProxiFlat object (index and data) to a directory.
      * A file named "data.bin" will be created in the specified directory.
      * @param path The directory path where the data file will be saved.
-     * @throws std::runtime_error if data has not been indexed or if saving fails (e.g., path issues, write errors).
+     * @throws std::runtime_error if data has not been indexed or if saving fails (e.g., path
+     * issues, write errors).
      */
-    void save(const std::string &path);
+    void save_state(const std::string &path);
 
     /**
      * @brief Loads a ProxiFlat object from a saved data file.
      * Replaces the current object's state with the loaded data.
      * @param path Path to the serialized ProxiFlat data file ("data.bin").
-     * @throws std::runtime_error if loading fails (e.g., file not found, corrupted data, version mismatch).
+     * @throws std::runtime_error if loading fails (e.g., file not found, corrupted data, version
+     * mismatch).
      */
-    void load(const std::string &path);
+    void load_state(const std::string &path);
 };
