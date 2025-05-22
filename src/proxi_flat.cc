@@ -187,7 +187,7 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
      * @param objective_function A string specifying the distance metric.
      *                           Supported values: "l2" (Euclidean), "l1" (Manhattan), "cos" (Cosine similarity/distance).
      *                           Defaults to "l2".
-     * @throws std::invalid_argument If an unsupported `objective_function` string is provided.
+     * @throws std::runtime_error If an unsupported `objective_function` string is provided.
      */
 
     if (objective_function == "l2") {
@@ -197,7 +197,7 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
     } else if (objective_function == "cos") {
         m_objective_function = cosine_similarity;
     } else {
-        throw std::invalid_argument("Invalid Distance function.");
+        throw std::runtime_error("Invalid Distance function.");
     }
     // if (objective_function == "l2") {
     //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
@@ -212,26 +212,8 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
     //         return cosine_distance(A, B);
     //     };
     // } else {
-    //     throw std::invalid_argument("Invalid Distance function.");
+    //     throw std::runtime_error("Invalid Distance function.");
     // }
-}
-
-ProxiFlat::ProxiFlat(const std::string &path)
-    : m_num_samples(0), m_num_features(0), m_K(0), m_is_indexed(false),
-      m_num_threads(1),             // Default thread count, potentially overridden by loaded data
-      m_objective_function_id("l2") // Default distance function, potentially overridden
-{
-    /**
-     * @brief Constructs a ProxiFlat object by loading its state from a file.
-     *
-     * This constructor delegates to the `load` method to deserialize the object's
-     * data (embeddings, documents, and metadata) from the specified file path.
-     *
-     * @param path The file path to the serialized ProxiFlat data (typically "data.bin").
-     * @throws std::runtime_error If the `load` method fails (e.g., file not found,
-     *                            corrupted data, I/O errors).
-     */
-    load(path); // Delegate to the load method
 }
 
 void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
@@ -248,12 +230,12 @@ void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
      *                   The outer vector represents the dataset, and each inner vector is a data point.
      * @param documents A vector of strings, where each string is a document or label
      *                  corresponding to the embedding at the same index in the `embeddings` vector.
-     * @throws std::invalid_argument If `embeddings` or `documents` are empty.
+     * @throws std::runtime_error If `embeddings` or `documents` are empty.
      * @throws std::runtime_error If the number of embeddings does not match the number of documents.
      * @throws std::runtime_error If any embedding has a dimension inconsistent with the first embedding.
      */
     if (embeddings.empty() || documents.empty())
-        throw std::invalid_argument("Embeddings or Documents cannot be empty.");
+        throw std::runtime_error("Embeddings or Documents cannot be empty.");
 
     if (embeddings.size() != documents.size())
         throw std::runtime_error("Size of embeddings and corpus are unequal");
@@ -284,14 +266,14 @@ std::vector<size_t> ProxiFlat::find_indices(const std::vector<float> &query) {
      * @return A vector containing the indices of the K nearest neighbours. The order of indices
      *         is typically from furthest to closest of the K neighbours.
      * @throws std::runtime_error If data has not been indexed yet (call `index_data` first).
-     * @throws std::invalid_argument If the dimension of the `query` vector does not match
+     * @throws std::runtime_error If the dimension of the `query` vector does not match
      *                               the dimension of the indexed embeddings (`m_num_features`).
      */
 
     if (!m_is_indexed)
         throw std::runtime_error("Call index() before querying.");
     if (query.size() != m_num_features)
-        throw std::invalid_argument("Query vector dimensions mismatch dataset feature dimensions.");
+        throw std::runtime_error("Query vector dimensions mismatch dataset feature dimensions.");
 
     return m_get_neighbours(query);
 }
@@ -307,7 +289,7 @@ ProxiFlat::find_indices(const std::vector<std::vector<float>> &queries) noexcept
      *         neighbours for the corresponding query in the input `queries` vector.
      *         Order of indices within inner vectors is typically from furthest to closest.
      * @throws std::runtime_error This method is marked `noexcept`, but it calls the single-query
-     *                            `find_indices` which can throw `std::runtime_error` or `std::invalid_argument`.
+     *                            `find_indices` which can throw `std::runtime_error` or `std::runtime_error`.
      *                            This can lead to `std::terminate` if an exception propagates out.
      *                            The `noexcept` should be removed or error handling improved.
      *                            Specifically, if any query has inconsistent dimensions, an exception will be thrown.
@@ -388,7 +370,7 @@ void ProxiFlat::insert_data(const std::vector<float> &embedding, const std::stri
      *
      * @param embedding The embedding vector (std::vector<float>) of the text to be inserted.
      * @param text The text document (std::string) to be inserted.
-     * @throws std::invalid_argument If the dimension of the provided `embedding` does not match
+     * @throws std::runtime_error If the dimension of the provided `embedding` does not match
      *                               the `m_num_features` of the existing dataset. This check only occurs
      *                               if `m_num_features` > 0.
      * @note If called on a completely empty index where `m_num_features` hasn't been set, this method
@@ -399,7 +381,7 @@ void ProxiFlat::insert_data(const std::vector<float> &embedding, const std::stri
 
     // Check if the vector is of the same length of the dataset
     if (embedding.size() != m_num_features)
-        throw std::invalid_argument("Invalid embedding vector size.");
+        throw std::runtime_error("Invalid embedding vector size.");
 
     m_embeddings_flat.insert(m_embeddings_flat.end(), embedding.begin(), embedding.end());
     m_documents.push_back(text);
@@ -407,7 +389,7 @@ void ProxiFlat::insert_data(const std::vector<float> &embedding, const std::stri
     m_num_samples++;
 }
 
-void ProxiFlat::save(const std::string &path_str) {
+void ProxiFlat::save_state(const std::string &path_str) {
     /**
      * @brief Saves the serialized ProxiFlat object to a binary file named "data.bin"
      * within the specified directory.
@@ -454,7 +436,7 @@ void ProxiFlat::save(const std::string &path_str) {
     }
 }
 
-void ProxiFlat::load(const std::string &path_str) {
+void ProxiFlat::load_state(const std::string &path_str) {
     /**
      * @brief Loads a ProxiFlat object from a serialized binary file.
      *
