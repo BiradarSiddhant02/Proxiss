@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import faiss
-from proxi import ProxiFlat
+from proxiss import ProxiFlat
 from tabulate import tabulate
 from sentence_transformers import SentenceTransformer
 from time import perf_counter_ns

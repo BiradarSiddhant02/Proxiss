@@ -3,7 +3,7 @@ requires = ["scikit-build-core", "pybind11", "wheel"]
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "proxi"
+name = "proxiss"
 version = "0.1.0"
 description = "Proxi: Accelerating nearest-neighbor search for high-dimensional data!"
 authors = [
@@ -13,13 +13,13 @@ readme = "README.md"
 license = {text = "LICENSE"}
 requires-python = ">=3.9"
 dependencies = [
-  "numpy>=1.20"
+  "numpy>=1.20",
+  "ply", "six", "scipy", "sympy==1.11.1"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache 2.0 License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

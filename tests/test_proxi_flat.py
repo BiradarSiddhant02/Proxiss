@@ -2,7 +2,7 @@ import unittest
 import os
 import shutil
 import numpy as np
-import proxi
+import proxiss
 
 
 class TestProxiFlat(unittest.TestCase):
@@ -81,7 +81,7 @@ class TestProxiFlat(unittest.TestCase):
         Ensures that a ProxiFlat object can be created with k, num_threads, and 'l2'
         objective, and that data can be indexed successfully.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         self._common_index_and_validate(idx, self.embeddings_list, self.documents)
         self.assertIsNotNone(idx)
 
@@ -91,7 +91,7 @@ class TestProxiFlat(unittest.TestCase):
         Verifies that querying with an exact match and a near match returns the
         correct indices and number of neighbours (k).
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         idx.index_data(self.embeddings_list, self.documents)
 
         indices = idx.find_indices(self.query_vector_exact)
@@ -108,7 +108,7 @@ class TestProxiFlat(unittest.TestCase):
         Verifies that querying for documents with an exact match and a near match
         returns the correct documents and number of neighbours (k).
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         idx.index_data(self.embeddings_list, self.documents)
 
         docs = idx.find_docs(self.query_vector_exact)
@@ -126,7 +126,7 @@ class TestProxiFlat(unittest.TestCase):
         Ensures that batched queries for indices return the correct results for multiple
         input queries, including exact and near matches.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         idx.index_data(self.embeddings_list, self.documents)
 
         results = idx.find_indices_batched(self.batched_queries_list)
@@ -146,7 +146,7 @@ class TestProxiFlat(unittest.TestCase):
         Ensures that batched queries for documents return the correct results for multiple
         input queries.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         idx.index_data(self.embeddings_list, self.documents)
 
         results = idx.find_docs_batched(self.batched_queries_list)
@@ -167,7 +167,7 @@ class TestProxiFlat(unittest.TestCase):
         Verifies that a new data point (embedding and document) can be inserted into an
         existing index and then successfully retrieved.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         idx.index_data(self.embeddings_list, self.documents)
 
         new_embedding = [10.0, 11.0, 12.0]
@@ -190,12 +190,12 @@ class TestProxiFlat(unittest.TestCase):
         using the instance `load_state` method. Verifies that the
         loaded index returns correct query results.
         """
-        idx_orig = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx_orig = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         idx_orig.index_data(self.embeddings_list, self.documents)
         idx_orig.save_state(self.save_directory)  # Pass the directory to save
 
         # Test loading via instance method - needs full file path
-        idx_loaded_method = proxi.ProxiFlat(self.k, self.num_threads, "l2")  # Create empty
+        idx_loaded_method = proxiss.ProxiFlat(self.k, self.num_threads, "l2")  # Create empty
         idx_loaded_method.load_state(self.save_file_path)
         docs_method = idx_loaded_method.find_docs(self.query_vector_exact)
         self.assertEqual(len(docs_method), self.k)
@@ -211,7 +211,7 @@ class TestProxiFlat(unittest.TestCase):
         Ensures that a ProxiFlat object can be created and data indexed using the
         'l1' distance metric.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l1")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l1")
         self._common_index_and_validate(idx, self.embeddings_list, self.documents)
 
         indices = idx.find_indices(self.query_vector_exact)
@@ -224,7 +224,7 @@ class TestProxiFlat(unittest.TestCase):
         Verifies that attempting to index with empty data raises a RuntimeError,
         as per current C++ implementation requiring non-empty data for index_data.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):  # Or specific pybind11 exception if mapped
             idx.index_data([], [])
 
@@ -234,7 +234,7 @@ class TestProxiFlat(unittest.TestCase):
         Ensures that a RuntimeError (or RuntimeError from C++) is raised if the number of
         embeddings does not match the number of documents during indexing.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):
             idx.index_data(self.embeddings_list, self.documents[:1])
 
@@ -244,7 +244,7 @@ class TestProxiFlat(unittest.TestCase):
         Verifies that a RuntimeError is raised if a query is attempted on an empty,
         un-indexed ProxiFlat instance.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):  # Adjust if a different error is expected
             idx.find_indices(self.query_vector_exact)
 
@@ -254,7 +254,7 @@ class TestProxiFlat(unittest.TestCase):
         Verifies that attempting to save an un-indexed ProxiFlat instance raises a
         RuntimeError, as the C++ `save` method checks `m_is_indexed`.
         """
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):  # Expecting an error as per C++ checks
             idx.save_state(self.save_directory)  # Pass the directory to save
 
@@ -265,7 +265,7 @@ class TestProxiFlat(unittest.TestCase):
         both via the constructor and the instance `load_state` method.
         """
         non_existent_file = os.path.join(self.temp_dir, "non_existent_file.bin")
-        idx = proxi.ProxiFlat(self.k, self.num_threads, "l2")
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
         with self.assertRaises(RuntimeError):
             idx.load_state(non_existent_file)
 
@@ -277,7 +277,7 @@ class TestProxiFlat(unittest.TestCase):
         (mapped from std::invalid_argument in C++).
         """
         with self.assertRaises(RuntimeError):  # Or std::invalid_argument if mapped
-            proxi.ProxiFlat(self.k, self.num_threads, "invalid_function")
+            proxiss.ProxiFlat(self.k, self.num_threads, "invalid_function")
 
 
 if __name__ == "__main__":

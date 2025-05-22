@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from time import perf_counter_ns
 
 try:
-    import proxi
+    import proxiss
 except ImportError:
     raise SystemExit("Could not import `proxi`. Build & install it first.")
 
@@ -61,7 +61,7 @@ def main():
 
     # 3) Build & index
     t0 = perf_counter_ns()
-    p = proxi.ProxiFlat(k=args.k, num_threads=args.threads, objective_function=args.objective)
+    p = proxiss.ProxiFlat(k=args.k, num_threads=args.threads, objective_function=args.objective)
     p.index_data(X_train.astype(np.float32), docs_train)
     t1 = perf_counter_ns()
     index_ns = t1 - t0
