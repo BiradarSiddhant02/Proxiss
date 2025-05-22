@@ -9,27 +9,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Find OpenMP package
 find_package(OpenMP)
 
-# Platform-specific compiler flags
-if(MSVC)
-    set(CMAKE_CXX_FLAGS "/O2 /DNDEBUG")
-    
-    # Check for AVX support in MSVC
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag("/arch:AVX" COMPILER_SUPPORTS_AVX)
-    if(COMPILER_SUPPORTS_AVX)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
-    endif()
-else()
-    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG")
-    
-    # Check for AVX support in GCC/Clang
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag("-mavx" COMPILER_SUPPORTS_AVX)
-    if(COMPILER_SUPPORTS_AVX)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
-    endif()
-endif()
-
 # Fetch pybind11
 include(FetchContent)
 FetchContent_Declare(
@@ -51,19 +30,58 @@ pybind11_add_module(proxi_cpp MODULE
 # Set include directories for the target
 target_include_directories(proxi_cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Apply compiler options to the target
+# Apply compiler options to the target - consolidated approach
 if(MSVC)
-    target_compile_options(proxi_cpp PRIVATE /O2)
-    if(COMPILER_SUPPORTS_AVX)
+    # Check for AVX2 support first
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("/arch:AVX2" COMPILER_SUPPORTS_AVX2)
+    check_cxx_compiler_flag("/arch:AVX" COMPILER_SUPPORTS_AVX)
+    
+    # Base optimization flags
+    target_compile_options(proxi_cpp PRIVATE 
+        /O2 /Ob2 /Oi /Ot /Oy /GL /fp:fast /DNDEBUG
+        /favor:INTEL64 /GS- /Gy /GT /MP
+    )
+    
+    # Add AVX support
+    if(COMPILER_SUPPORTS_AVX2)
+        target_compile_options(proxi_cpp PRIVATE /arch:AVX2)
+        message(STATUS "Using AVX2 instructions on Windows")
+    elseif(COMPILER_SUPPORTS_AVX)
         target_compile_options(proxi_cpp PRIVATE /arch:AVX)
+        message(STATUS "Using AVX instructions on Windows")
     endif()
+    
+    # Link-time optimization
+    set_target_properties(proxi_cpp PROPERTIES 
+        LINK_FLAGS "/LTCG /OPT:REF /OPT:ICF"
+    )
 else()
-    target_compile_options(proxi_cpp PRIVATE -O3 -march=native -mavx)
+    # GCC/Clang optimizations
+    include(CheckCXXCompilerFlag)
+    
+    target_compile_options(proxi_cpp PRIVATE 
+        -O3 -DNDEBUG -ffast-math
+    )
+    
+    # Check for march=native support
+    check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+    if(COMPILER_SUPPORTS_MARCH_NATIVE)
+        target_compile_options(proxi_cpp PRIVATE -march=native)
+        message(STATUS "Using -march=native for optimal CPU optimization")
+    else()
+        # Fallback to basic AVX
+        check_cxx_compiler_flag("-mavx" COMPILER_SUPPORTS_AVX)
+        if(COMPILER_SUPPORTS_AVX)
+            target_compile_options(proxi_cpp PRIVATE -mavx)
+        endif()
+    endif()
 endif()
 
 # Apply OpenMP to the target appropriately for each platform
 if(OpenMP_CXX_FOUND)
     target_link_libraries(proxi_cpp PRIVATE OpenMP::OpenMP_CXX)
+    message(STATUS "OpenMP found and enabled")
 else()
     # Special case for macOS which may not have OpenMP by default
     if(APPLE)
@@ -103,6 +121,10 @@ if(WIN32)
 elseif(APPLE)
     set_target_properties(proxi_cpp PROPERTIES SUFFIX ".so")
 endif()
+
+# Debug output to verify compilation flags
+get_target_property(COMPILE_OPTIONS proxi_cpp COMPILE_OPTIONS)
+message(STATUS "Final compile options: ${COMPILE_OPTIONS}")
 
 # Installation rules
 install(TARGETS proxi_cpp LIBRARY DESTINATION .)
