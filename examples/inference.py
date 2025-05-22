@@ -44,21 +44,30 @@ def main():
     text_file = args.words
 
     print("Loading data...")
-    embeddings = np.load(embedding_file)
-    text = np.load(text_file, allow_pickle=True)
+    embeddings_np = np.load(embedding_file)
+    text_np = np.load(text_file, allow_pickle=True)  # Renamed for clarity
 
-    print(f"Loaded {len(embeddings)} embeddings with dimension {embeddings.shape[1]}")
+    print(f"Loaded {len(embeddings_np)} embeddings with dimension {embeddings_np.shape[1]}")
 
-    embeddings_float32 = embeddings.astype(np.float32)
+    # Convert to float32, which is generally preferred for ML tasks and FAISS
+    if embeddings_np.dtype != np.float32:
+        embeddings_f32 = embeddings_np.astype(np.float32)
+        del embeddings_np  # Free memory of the original array if it was copied
+    else:
+        embeddings_f32 = embeddings_np  # Already float32, no copy by astype
 
     print("\nBuilding Proxi index...")
     proxi_index = ProxiFlat(k=k, num_threads=4, objective_function="l2")
-    proxi_index.index_data(embeddings_float32, text)
+    proxi_index.index_data(embeddings_f32, text_np)
 
     print("Building FAISS index...")
-    dimension = embeddings.shape[1]
+    dimension = embeddings_f32.shape[1]
     faiss_index = faiss.IndexFlatL2(dimension)
-    faiss_index.add(embeddings_float32)
+    faiss_index.add(embeddings_f32)
+
+    # Attempt to free memory for the large embeddings array after indices are built,
+    # assuming both Proxi and FAISS have made their own internal copies.
+    del embeddings_f32
 
     print("Loading sentence transformer model...")
     model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
@@ -75,12 +84,12 @@ def main():
         input_embedding_reshaped = input_embedding.reshape(1, -1).astype(np.float32)
 
         proxi_start = perf_counter_ns()
-        proxi_results = proxi_index.find_docs(input_embedding_reshaped[0])
+        proxi_results = proxi_index.find_docs(input_embedding_reshaped[0].tolist())  # Pass list to ProxiFlat
         proxi_end = perf_counter_ns()
 
         faiss_start = perf_counter_ns()
         _, faiss_indices = faiss_index.search(input_embedding_reshaped, k)
-        faiss_results = [text[idx] for idx in faiss_indices[0]]
+        faiss_results = [text_np[idx] for idx in faiss_indices[0]]  # Use renamed text_np
         faiss_end = perf_counter_ns()
 
         print(f"\nSimilarity search results for: '{user_input}'")
