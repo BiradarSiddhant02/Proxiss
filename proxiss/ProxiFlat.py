@@ -1,10 +1,33 @@
 import proxi_cpp  # type: ignore
 import numpy as np
-from typing import List, Optional, Union
+from typing import List, Union
 
 
 class ProxiFlat:
+    """
+    Python wrapper for the C++ ProxiFlat class, providing high-performance nearest-neighbor search.
+
+    Methods:
+        index_data(embeddings, documents): Indexes embeddings and associated documents.
+        find_indices(query): Finds indices of nearest neighbors for a single query.
+        find_indices_batched(queries): Finds indices for a batch of queries.
+        find_docs(query): Finds documents for a single query.
+        find_docs_batched(queries): Finds documents for a batch of queries.
+        insert_data(embedding, text): Inserts a single embedding and document.
+        save_state(path): Saves the current index state to disk.
+        load_state(path): Loads the index state from disk.
+    """
     def __init__(self, k: int, num_threads: int, objective_function: str = "l2") -> None:
+        """
+        Initialize the ProxiFlat index.
+
+        Args:
+            k (int): Number of nearest neighbors to search for.
+            num_threads (int): Number of threads to use for computation.
+            objective_function (str, optional): Distance metric/objective function. Default is "l2".
+        Raises:
+            ValueError: If k or num_threads is not positive.
+        """
         if k <= 0:
             raise ValueError("K cannot be 0 or negative number.")
         if num_threads <= 0:
@@ -17,6 +40,16 @@ class ProxiFlat:
         embeddings: Union[List[List[float]], np.ndarray, None],
         documents: Union[List[str], np.ndarray],
     ) -> None:
+        """
+        Index the provided embeddings and associated documents.
+
+        Args:
+            embeddings (List[List[float]] | np.ndarray | None): 2D array or list of embedding vectors, or None for empty.
+            documents (List[str] | np.ndarray): 1D array or list of document strings.
+        Raises:
+            ValueError: If input shapes are invalid or conversion fails.
+            TypeError: If input types are invalid.
+        """
         embeddings_np: np.ndarray
         if embeddings is None:
             embeddings_np = np.array([], dtype=np.float32)  # Empty 1D array for C++
@@ -81,6 +114,17 @@ class ProxiFlat:
         self.module.index_data(embeddings_np, final_documents_list)
 
     def find_indices(self, query: Union[List[float], np.ndarray]) -> np.ndarray:
+        """
+        Find indices of the k nearest neighbors for a single query vector.
+
+        Args:
+            query (List[float] | np.ndarray): 1D query vector.
+        Returns:
+            np.ndarray: Indices of nearest neighbors.
+        Raises:
+            ValueError: If input shape is invalid or conversion fails.
+            TypeError: If input type is invalid.
+        """
         query_np: np.ndarray
         if isinstance(query, list):
             try:
@@ -103,6 +147,17 @@ class ProxiFlat:
         return np.array(result_list, dtype=np.int32)
 
     def find_indices_batched(self, queries: Union[List[List[float]], np.ndarray]) -> np.ndarray:
+        """
+        Find indices of the k nearest neighbors for a batch of queries.
+
+        Args:
+            queries (List[List[float]] | np.ndarray): 2D array or list of query vectors.
+        Returns:
+            np.ndarray: Indices of nearest neighbors for each query.
+        Raises:
+            ValueError: If input shape is invalid or conversion fails.
+            TypeError: If input type is invalid.
+        """
         queries_np: np.ndarray
         if isinstance(queries, list):
             try:
@@ -147,6 +202,17 @@ class ProxiFlat:
         return np.array(result_list_of_lists, dtype=np.int32)
 
     def find_docs(self, query: Union[List[float], np.ndarray]) -> List[str]:
+        """
+        Find the documents corresponding to the k nearest neighbors for a single query vector.
+
+        Args:
+            query (List[float] | np.ndarray): 1D query vector.
+        Returns:
+            List[str]: Documents of nearest neighbors.
+        Raises:
+            ValueError: If input shape is invalid or conversion fails.
+            TypeError: If input type is invalid.
+        """
         query_np: np.ndarray
         if isinstance(query, list):
             try:
@@ -168,6 +234,17 @@ class ProxiFlat:
         return self.module.find_docs(query_np)
 
     def find_docs_batched(self, queries: Union[List[List[float]], np.ndarray]) -> List[List[str]]:
+        """
+        Find the documents corresponding to the k nearest neighbors for a batch of queries.
+
+        Args:
+            queries (List[List[float]] | np.ndarray): 2D array or list of query vectors.
+        Returns:
+            List[List[str]]: Documents of nearest neighbors for each query.
+        Raises:
+            ValueError: If input shape is invalid or conversion fails.
+            TypeError: If input type is invalid.
+        """
         queries_np: np.ndarray
         if isinstance(queries, list):
             try:
@@ -206,6 +283,16 @@ class ProxiFlat:
         return self.module.find_docs_batched(queries_np)
 
     def insert_data(self, embedding: Union[List[float], np.ndarray], text: str) -> None:
+        """
+        Insert a single embedding and its associated document into the index.
+
+        Args:
+            embedding (List[float] | np.ndarray): 1D embedding vector.
+            text (str): Document string.
+        Raises:
+            ValueError: If input shape is invalid or conversion fails.
+            TypeError: If input type is invalid.
+        """
         embedding_np: np.ndarray
         if isinstance(embedding, list):
             try:
@@ -229,7 +316,19 @@ class ProxiFlat:
         self.module.insert_data(embedding_np, text)
 
     def save_state(self, path: str) -> None:
+        """
+        Save the current index state to disk.
+
+        Args:
+            path (str): File path to save the state.
+        """
         self.module.save_state(path)
 
     def load_state(self, path: str) -> None:
+        """
+        Load the index state from disk.
+
+        Args:
+            path (str): File path to load the state from.
+        """
         self.module.load_state(path)
