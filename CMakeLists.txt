@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(proxi)
+project(proxi_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,27 +43,27 @@ FetchContent_MakeAvailable(pybind11)
 include_directories(include)
 
 # Define the module
-pybind11_add_module(proxi MODULE
+pybind11_add_module(proxi_cpp MODULE
     src/proxi_flat.cc
     bindings/proxi_binding.cc
 )
 
 # Set include directories for the target
-target_include_directories(proxi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(proxi_cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Apply compiler options to the target
 if(MSVC)
-    target_compile_options(proxi PRIVATE /O2)
+    target_compile_options(proxi_cpp PRIVATE /O2)
     if(COMPILER_SUPPORTS_AVX)
-        target_compile_options(proxi PRIVATE /arch:AVX)
+        target_compile_options(proxi_cpp PRIVATE /arch:AVX)
     endif()
 else()
-    target_compile_options(proxi PRIVATE -O3 -march=native -mavx)
+    target_compile_options(proxi_cpp PRIVATE -O3 -march=native -mavx)
 endif()
 
 # Apply OpenMP to the target appropriately for each platform
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(proxi PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(proxi_cpp PRIVATE OpenMP::OpenMP_CXX)
 else()
     # Special case for macOS which may not have OpenMP by default
     if(APPLE)
@@ -80,9 +80,9 @@ else()
                 set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
                 set(OpenMP_CXX_LIB_NAMES "omp")
                 set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
-                target_compile_options(proxi PRIVATE ${OpenMP_CXX_FLAGS})
-                target_link_libraries(proxi PRIVATE ${OpenMP_omp_LIBRARY})
-                target_include_directories(proxi PRIVATE ${HOMEBREW_LIBOMP_PREFIX}/include)
+                target_compile_options(proxi_cpp PRIVATE ${OpenMP_CXX_FLAGS})
+                target_link_libraries(proxi_cpp PRIVATE ${OpenMP_omp_LIBRARY})
+                target_include_directories(proxi_cpp PRIVATE ${HOMEBREW_LIBOMP_PREFIX}/include)
                 message(STATUS "Using Homebrew OpenMP")
             else()
                 message(WARNING "OpenMP not found. Building without OpenMP support. To enable OpenMP on macOS, install libomp with Homebrew.")
@@ -96,13 +96,13 @@ else()
 endif()
 
 # Set properties and handle platform-specific naming conventions
-set_target_properties(proxi PROPERTIES PREFIX "")
+set_target_properties(proxi_cpp PROPERTIES PREFIX "")
 
 if(WIN32)
-    set_target_properties(proxi PROPERTIES SUFFIX ".pyd")
+    set_target_properties(proxi_cpp PROPERTIES SUFFIX ".pyd")
 elseif(APPLE)
-    set_target_properties(proxi PROPERTIES SUFFIX ".so")
+    set_target_properties(proxi_cpp PROPERTIES SUFFIX ".so")
 endif()
 
 # Installation rules
-install(TARGETS proxi LIBRARY DESTINATION .)
+install(TARGETS proxi_cpp LIBRARY DESTINATION .)
