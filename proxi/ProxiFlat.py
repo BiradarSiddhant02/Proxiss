@@ -23,12 +23,20 @@ class ProxiFlat:
         elif isinstance(embeddings, list):
             try:
                 embeddings_np = np.array(embeddings, dtype=np.float32)
-                if embeddings_np.ndim == 1 and len(embeddings) > 0 and isinstance(embeddings[0], list):  # list of lists but became 1D (e.g. [[1,2], []])
+                if (
+                    embeddings_np.ndim == 1
+                    and len(embeddings) > 0
+                    and isinstance(embeddings[0], list)
+                ):  # list of lists but became 1D (e.g. [[1,2], []])
                     pass  # Allow, C++ might handle or error on inconsistent dimensions
                 elif embeddings_np.ndim == 0 and len(embeddings) == 0:  # Handles []
                     embeddings_np = np.array([], dtype=np.float32)  # Correctly make it 1D empty
-                elif embeddings_np.ndim != 2 and not (embeddings_np.ndim == 1 and embeddings_np.shape[0] == 0):
-                    raise ValueError("Embeddings list must be convertible to a 2D NumPy array or an empty 1D array.")
+                elif embeddings_np.ndim != 2 and not (
+                    embeddings_np.ndim == 1 and embeddings_np.shape[0] == 0
+                ):
+                    raise ValueError(
+                        "Embeddings list must be convertible to a 2D NumPy array or an empty 1D array."
+                    )
             except ValueError as e:
                 raise ValueError(f"Error converting embeddings list to NumPy array: {e}")
         elif isinstance(embeddings, np.ndarray):
@@ -36,8 +44,12 @@ class ProxiFlat:
                 embeddings_np = embeddings.astype(np.float32)
             else:
                 embeddings_np = embeddings
-            if not (embeddings_np.ndim == 2 or (embeddings_np.ndim == 1 and embeddings_np.shape[0] == 0)):
-                raise ValueError("Embeddings NumPy array must be 2D (e.g., (N, D)) or an empty 1D array.")
+            if not (
+                embeddings_np.ndim == 2 or (embeddings_np.ndim == 1 and embeddings_np.shape[0] == 0)
+            ):
+                raise ValueError(
+                    "Embeddings NumPy array must be 2D (e.g., (N, D)) or an empty 1D array."
+                )
         else:
             raise TypeError("Embeddings must be a list of lists, a NumPy array, or None.")
 
@@ -98,9 +110,15 @@ class ProxiFlat:
                 if queries_np.ndim == 1 and len(queries) > 0 and isinstance(queries[0], list):
                     pass  # Allow, C++ might handle or error on inconsistent dimensions
                 elif queries_np.ndim == 0 and len(queries) == 0:  # Handles []
-                    queries_np = np.array([], dtype=np.float32).reshape(0, 0)  # C++ expects 2D for batched
-                elif queries_np.ndim != 2 and not (queries_np.ndim == 1 and queries_np.shape[0] == 0):
-                    raise ValueError("Batched queries list must be convertible to a 2D NumPy array or an empty 1D array for empty case.")
+                    queries_np = np.array([], dtype=np.float32).reshape(
+                        0, 0
+                    )  # C++ expects 2D for batched
+                elif queries_np.ndim != 2 and not (
+                    queries_np.ndim == 1 and queries_np.shape[0] == 0
+                ):
+                    raise ValueError(
+                        "Batched queries list must be convertible to a 2D NumPy array or an empty 1D array for empty case."
+                    )
             except ValueError as e:
                 raise ValueError(f"Error converting batched queries list to NumPy array: {e}")
         elif isinstance(queries, np.ndarray):
@@ -109,7 +127,9 @@ class ProxiFlat:
             else:
                 queries_np = queries
         else:
-            raise TypeError("Batched queries must be a list of lists of floats or a 2D NumPy array.")
+            raise TypeError(
+                "Batched queries must be a list of lists of floats or a 2D NumPy array."
+            )
 
         if not (queries_np.ndim == 2 or (queries_np.ndim == 1 and queries_np.shape[0] == 0)):
             # If it's an empty 1D array, reshape to (0,0) or (0,D) if D is known, for C++
@@ -118,7 +138,9 @@ class ProxiFlat:
                 # If a specific D is required for empty 2D array, this might need adjustment.
                 queries_np = queries_np.reshape(0, 0)
             else:
-                raise ValueError("Batched queries NumPy array must be 2D (e.g., (M, D)) or an empty 1D array.")
+                raise ValueError(
+                    "Batched queries NumPy array must be 2D (e.g., (M, D)) or an empty 1D array."
+                )
 
         # C++ returns list[list[int]], convert to NumPy array
         result_list_of_lists = self.module.find_indices_batched(queries_np)
@@ -154,8 +176,12 @@ class ProxiFlat:
                     pass  # Allow
                 elif queries_np.ndim == 0 and len(queries) == 0:
                     queries_np = np.array([], dtype=np.float32).reshape(0, 0)
-                elif queries_np.ndim != 2 and not (queries_np.ndim == 1 and queries_np.shape[0] == 0):
-                    raise ValueError("Batched queries list must be convertible to a 2D NumPy array or an empty 1D array for empty case.")
+                elif queries_np.ndim != 2 and not (
+                    queries_np.ndim == 1 and queries_np.shape[0] == 0
+                ):
+                    raise ValueError(
+                        "Batched queries list must be convertible to a 2D NumPy array or an empty 1D array for empty case."
+                    )
             except ValueError as e:
                 raise ValueError(f"Error converting batched queries list to NumPy array: {e}")
         elif isinstance(queries, np.ndarray):
@@ -164,13 +190,17 @@ class ProxiFlat:
             else:
                 queries_np = queries
         else:
-            raise TypeError("Batched queries must be a list of lists of floats or a 2D NumPy array.")
+            raise TypeError(
+                "Batched queries must be a list of lists of floats or a 2D NumPy array."
+            )
 
         if not (queries_np.ndim == 2 or (queries_np.ndim == 1 and queries_np.shape[0] == 0)):
             if queries_np.ndim == 1 and queries_np.shape[0] == 0:
                 queries_np = queries_np.reshape(0, 0)
             else:
-                raise ValueError("Batched queries NumPy array must be 2D (e.g., (M, D)) or an empty 1D array.")
+                raise ValueError(
+                    "Batched queries NumPy array must be 2D (e.g., (M, D)) or an empty 1D array."
+                )
 
         # C++ returns list[list[str]]
         return self.module.find_docs_batched(queries_np)

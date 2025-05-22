@@ -63,9 +63,7 @@ class TestProxiFlat(unittest.TestCase):
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    def _common_index_and_validate(
-        self, index_instance, embeddings_to_index, docs_to_index
-    ):
+    def _common_index_and_validate(self, index_instance, embeddings_to_index, docs_to_index):
         """Helper method to index data and perform a basic validation.
 
         Args:
@@ -75,9 +73,7 @@ class TestProxiFlat(unittest.TestCase):
         """
         index_instance.index_data(embeddings_to_index, docs_to_index)
         # Basic check after indexing (more detailed checks in specific query tests)
-        self.assertIsNotNone(
-            index_instance
-        )  # Placeholder, real checks in query methods
+        self.assertIsNotNone(index_instance)  # Placeholder, real checks in query methods
 
     def test_01_constructor_and_index_l2(self):
         """Test parameterized constructor and indexing with L2 distance (Euclidean).
@@ -199,9 +195,7 @@ class TestProxiFlat(unittest.TestCase):
         idx_orig.save_state(self.save_directory)  # Pass the directory to save
 
         # Test loading via instance method - needs full file path
-        idx_loaded_method = proxi.ProxiFlat(
-            self.k, self.num_threads, "l2"
-        )  # Create empty
+        idx_loaded_method = proxi.ProxiFlat(self.k, self.num_threads, "l2")  # Create empty
         idx_loaded_method.load_state(self.save_file_path)
         docs_method = idx_loaded_method.find_docs(self.query_vector_exact)
         self.assertEqual(len(docs_method), self.k)
@@ -209,9 +203,7 @@ class TestProxiFlat(unittest.TestCase):
 
         # Check if K, num_features, num_samples are loaded correctly
         # Note: ProxiFlat class would need getters for these or we infer from behavior
-        self.assertEqual(
-            len(idx_loaded_method.find_indices(self.query_vector_exact)), self.k
-        )
+        self.assertEqual(len(idx_loaded_method.find_indices(self.query_vector_exact)), self.k)
 
     def test_08_constructor_and_index_l1(self):
         """Test parameterized constructor and indexing with L1 distance (Manhattan).
