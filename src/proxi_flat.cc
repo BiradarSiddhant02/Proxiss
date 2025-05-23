@@ -199,21 +199,7 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
     } else {
         throw std::runtime_error("Invalid Distance function.");
     }
-    // if (objective_function == "l2") {
-    //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-    //         return euclidean_distance(A, B);
-    //     };
-    // } else if (objective_function == "l1") {
-    //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-    //         return manhattan_distance(A, B);
-    //     };
-    // } else if (objective_function == "cos") {
-    //     m_objective_function = [](std::span<const float> A, std::span<const float> B) {
-    //         return cosine_distance(A, B);
-    //     };
-    // } else {
-    //     throw std::runtime_error("Invalid Distance function.");
-    // }
+
 }
 
 void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
