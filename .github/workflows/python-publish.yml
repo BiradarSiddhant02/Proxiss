@@ -26,10 +26,47 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Build release distributions
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build auditwheel
+
+      - name: Build and Prepare Distributions
         run: |
-            python -m build --wheel
-            auditwheel repair dist/proxi-*.whl --plat linux_x86_64 -w dist
+          # Create fresh directories
+          rm -rf dist wheelhouse
+          mkdir -p dist wheelhouse
+
+          # Build sdist and wheel into wheelhouse
+          python -m build --sdist --wheel --outdir wheelhouse/
+
+          # Copy sdist to dist
+          cp wheelhouse/*.tar.gz dist/
+
+          # Repair Linux wheel(s) if any, and place them in dist/
+          # Assumes package name is 'proxiss' for the wheel filename glob
+          FOUND_LINUX_WHEEL=0
+          for f_whl in wheelhouse/proxiss-*-linux_*.whl; do
+            if [ -e "$f_whl" ]; then # Check if glob matched a file
+              echo "Repairing Linux wheel: $f_whl"
+              auditwheel repair "$f_whl" --plat manylinux2014_x86_64 -w dist/
+              FOUND_LINUX_WHEEL=1
+            fi
+          done
+
+          # If no Linux-specific wheel was found/repaired, check for pure Python wheels
+          if [ "$FOUND_LINUX_WHEEL" -eq 0 ]; then
+            for f_whl in wheelhouse/proxiss-*-py3-none-any.whl; do
+              if [ -e "$f_whl" ]; then
+                echo "Copying pure Python wheel: $f_whl"
+                cp "$f_whl" dist/
+              fi
+            done
+          fi
+
+          # Clean up temporary directory
+          rm -rf wheelhouse/
+
+          echo "Final contents of dist/:"
+          ls -l dist/
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4

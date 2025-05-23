@@ -1,0 +1,238 @@
+name: Build manylinux, Windows, macOS wheels for CPython & PyPy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Manylinux build on ubuntu-latest using manylinux docker
+  build-manylinux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-20.04]
+        python-version: ['3.9', '3.10'] # Ensure versions are strings for exact matching
+        interpreter: [cpython, pypy]
+        arch: [x86_64, aarch64]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python interpreter
+        run: |
+          if [ "${{ matrix.interpreter }}" = "cpython" ]; then
+            python_version=${{ matrix.python-version }}
+            # Use actions/setup-python for CPython on the runner for consistency and reliability
+            # This step is primarily for the runner's environment, actual build uses Python in Docker
+            echo "Setting up CPython ${{ matrix.python-version }} on runner"
+            # The original script used apt-get, but setup-python is generally preferred.
+            # However, to minimize changes to existing logic that sets python_bin:
+            sudo apt-get update
+            sudo apt-get install -y python${python_version} python3-pip python${python_version}-venv
+            python_bin="python${python_version}"
+          else # PyPy
+            echo "Setting up PyPy for Python ${{ matrix.python-version }} (${{ matrix.arch }}) on runner"
+            sudo apt-get update
+            sudo apt-get install -y wget bzip2
+            
+            PYPY_PYTHON_VERSION="${{ matrix.python-version }}"
+            PYPY_ARCH="${{ matrix.arch }}"
+            
+            if [ "$PYPY_PYTHON_VERSION" = "3.9" ]; then
+              PYPY_VERSION_DETAIL="pypy3.9-v7.3.11"
+            elif [ "$PYPY_PYTHON_VERSION" = "3.10" ]; then
+              PYPY_VERSION_DETAIL="pypy3.10-v7.3.13"
+            else
+              echo "Unsupported PyPy version: $PYPY_PYTHON_VERSION"
+              exit 1
+            fi
+
+            if [ "$PYPY_ARCH" = "aarch64" ]; then
+              PYPY_ARCH_SUFFIX="aarch64"
+              PYPY_DIR_ARCH_SUFFIX="aarch64"
+            else # x86_64
+              PYPY_ARCH_SUFFIX="linux_x86_64-portable"
+              PYPY_DIR_ARCH_SUFFIX="linux_x86_64-portable"
+            fi
+            
+            PYPY_TARBALL="${PYPY_VERSION_DETAIL}-${PYPY_ARCH_SUFFIX}.tar.bz2"
+            PYPY_DIR_NAME="${PYPY_VERSION_DETAIL}-${PYPY_DIR_ARCH_SUFFIX}"
+
+            wget -q "https://downloads.python.org/pypy/${PYPY_TARBALL}"
+            tar -xjf "${PYPY_TARBALL}"
+            echo "$PWD/${PYPY_DIR_NAME}/bin" >> $GITHUB_PATH
+            python_bin="pypy3"
+          fi
+          echo "Using interpreter on runner: $python_bin"
+          $python_bin --version
+
+      - name: Install build dependencies (on runner, for potential pre-docker steps)
+        run: |
+          $python_bin -m pip install --upgrade pip setuptools wheel build
+
+      - name: Build wheel inside manylinux docker
+        env:
+          MATRIX_INTERPRETER: ${{ matrix.interpreter }}
+          MATRIX_PYTHON_VERSION: ${{ matrix.python-version }}
+          MATRIX_ARCH: ${{ matrix.arch }}
+        run: |
+          docker_script='
+            set -e
+            echo "--- Inside Docker ---"
+            echo "Interpreter: $MATRIX_INTERPRETER"
+            echo "Python Version: $MATRIX_PYTHON_VERSION"
+            echo "Architecture: $MATRIX_ARCH"
+
+            # manylinux images are CentOS-based, use yum
+            yum install -y wget tar bzip2 > /dev/null
+
+            if [ "$MATRIX_INTERPRETER" = "cpython" ]; then
+              CPYTHON_TAG_VERSION_PART="${MATRIX_PYTHON_VERSION//./}" # 3.9 -> 39
+              PYTHON_EXE="/opt/python/cp${CPYTHON_TAG_VERSION_PART}-cp${CPYTHON_TAG_VERSION_PART}/bin/python"
+            else # pypy
+              echo "Setting up PyPy $MATRIX_PYTHON_VERSION for $MATRIX_ARCH inside Docker"
+              if [ "$MATRIX_PYTHON_VERSION" = "3.9" ]; then
+                PYPY_VERSION_DETAIL="pypy3.9-v7.3.11"
+              elif [ "$MATRIX_PYTHON_VERSION" = "3.10" ]; then
+                PYPY_VERSION_DETAIL="pypy3.10-v7.3.13"
+              else
+                echo "Unsupported PyPy version for Docker: $MATRIX_PYTHON_VERSION"
+                exit 1
+              fi
+
+              if [ "$MATRIX_ARCH" = "aarch64" ]; then
+                PYPY_ARCH_SUFFIX_DOCKER="aarch64"
+                PYPY_DIR_ARCH_SUFFIX_DOCKER="aarch64"
+              else # x86_64
+                PYPY_ARCH_SUFFIX_DOCKER="linux_x86_64-portable"
+                PYPY_DIR_ARCH_SUFFIX_DOCKER="linux_x86_64-portable"
+              fi
+              
+              PYPY_TARBALL_DOCKER="${PYPY_VERSION_DETAIL}-${PYPY_ARCH_SUFFIX_DOCKER}.tar.bz2"
+              PYPY_DIR_NAME_DOCKER="${PYPY_VERSION_DETAIL}-${PYPY_DIR_ARCH_SUFFIX_DOCKER}"
+
+              echo "Downloading PyPy in Docker: ${PYPY_TARBALL_DOCKER}"
+              wget -q "https://downloads.python.org/pypy/${PYPY_TARBALL_DOCKER}" -P /tmp
+              echo "Extracting PyPy in Docker..."
+              tar -xjf "/tmp/${PYPY_TARBALL_DOCKER}" -C /opt
+              rm "/tmp/${PYPY_TARBALL_DOCKER}"
+              PYTHON_EXE="/opt/${PYPY_DIR_NAME_DOCKER}/bin/pypy3"
+            fi
+
+            echo "Using Python in Docker: $PYTHON_EXE"
+            $PYTHON_EXE --version
+            
+            echo "Installing build dependencies with $PYTHON_EXE in Docker..."
+            $PYTHON_EXE -m pip install --upgrade pip setuptools wheel build
+            
+            echo "Building wheel with $PYTHON_EXE in Docker..."
+            $PYTHON_EXE -m build --wheel --outdir /io/dist /io
+            
+            echo "--- Docker script finished ---"
+          '
+          docker run --rm -v $PWD:/io \\
+            -e MATRIX_INTERPRETER \\
+            -e MATRIX_PYTHON_VERSION \\
+            -e MATRIX_ARCH \\
+            quay.io/pypa/manylinux2014_${{ matrix.arch }} /bin/bash -c "${docker_script}"
+
+      - name: List built wheels
+        run: ls -l dist
+
+      - name: Upload wheels artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: manylinux-${{ matrix.arch }}-${{ matrix.python-version }}-${{ matrix.interpreter }}
+          path: dist/*.whl
+
+  # Windows build
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10]
+        interpreter: [cpython, pypy]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          # For PyPy, we must install manually in next step
+
+      - name: Install PyPy on Windows
+        if: matrix.interpreter == 'pypy'
+        run: |
+          choco install pypy3 --version=7.3.11
+          refreshenv
+          pypy3 --version
+
+      - name: Select python executable
+        run: |
+          if ("${{ matrix.interpreter }}" == "cpython") {
+            echo "::set-output name=pyexe::python"
+          } else {
+            echo "::set-output name=pyexe::pypy3"
+          }
+        id: setpython
+
+      - name: Install build tools
+        run: |
+          ${{ steps.setpython.outputs.pyexe }} -m pip install --upgrade pip setuptools wheel build
+
+      - name: Build wheel
+        run: |
+          ${{ steps.setpython.outputs.pyexe }} -m build --wheel --outdir dist/
+
+      - name: Upload wheels artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-${{ matrix.python-version }}-${{ matrix.interpreter }}
+          path: dist/*.whl
+
+  # macOS build
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10]
+        interpreter: [cpython, pypy]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install PyPy on macOS
+        if: matrix.interpreter == 'pypy'
+        run: |
+          curl -LO https://downloads.python.org/pypy/pypy3.9-v7.3.11-osx64.tar.bz2
+          tar -xjf pypy3.9-v7.3.11-osx64.tar.bz2
+          echo "export PATH=$PWD/pypy3.9-v7.3.11-osx64/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Select python executable
+        run: |
+          if [ "${{ matrix.interpreter }}" = "cpython" ]; then
+            echo "PYTHON=python3" >> $GITHUB_ENV
+          else
+            echo "PYTHON=pypy3" >> $GITHUB_ENV
+          fi
+
+      - name: Install build tools
+        run: |
+          $PYTHON -m pip install --upgrade pip setuptools wheel build
+
+      - name: Build wheel
+        run: |
+          $PYTHON -m build --wheel --outdir dist/
+
+      - name: Upload wheels artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-${{ matrix.python-version }}-${{ matrix.interpreter }}
+          path: dist/*.whl
