@@ -19,9 +19,7 @@ def print_time(time_ns):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Compare Proxi and FAISS similarity search."
-    )
+    parser = argparse.ArgumentParser(description="Compare Proxi and FAISS similarity search.")
     parser.add_argument(
         "--embeddings",
         type=str,
@@ -34,9 +32,7 @@ def main():
         required=True,
         help="Path to the .npy file with text entries.",
     )
-    parser.add_argument(
-        "-k", type=int, required=True, help="Number of neighbors to retrieve."
-    )
+    parser.add_argument("-k", type=int, required=True, help="Number of neighbors to retrieve.")
     args = parser.parse_args()
 
     k = args.k
@@ -84,7 +80,9 @@ def main():
         input_embedding_reshaped = input_embedding.reshape(1, -1).astype(np.float32)
 
         proxi_start = perf_counter_ns()
-        proxi_results = proxi_index.find_docs(input_embedding_reshaped[0].tolist())  # Pass list to ProxiFlat
+        proxi_results = proxi_index.find_docs(
+            input_embedding_reshaped[0].tolist()
+        )  # Pass list to ProxiFlat
         proxi_end = perf_counter_ns()
 
         faiss_start = perf_counter_ns()

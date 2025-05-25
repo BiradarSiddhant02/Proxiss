@@ -17,13 +17,17 @@ class ProxiFlat:
         save_state(path): Saves the current index state to disk.
         load_state(path): Loads the index state from disk.
     """
-    def __init__(self, k: int, num_threads: int, objective_function: str = "l2") -> None:
+
+    def __init__(
+        self, k: int, num_threads: int, in_memory: bool = True, objective_function: str = "l2"
+    ) -> None:
         """
         Initialize the ProxiFlat index.
 
         Args:
             k (int): Number of nearest neighbors to search for.
             num_threads (int): Number of threads to use for computation.
+            in_memory (bool, optional): If True, use in-memory mode. If False, use memory-mapped mode. Default is True.
             objective_function (str, optional): Distance metric/objective function. Default is "l2".
         Raises:
             ValueError: If k or num_threads is not positive.
@@ -33,7 +37,7 @@ class ProxiFlat:
         if num_threads <= 0:
             raise ValueError("num_threads cannot be 0 or negative.")
 
-        self.module = proxi_cpp.ProxiFlat(k, num_threads, objective_function)
+        self.module = proxi_cpp.ProxiFlat(k, num_threads, in_memory, objective_function)
 
     def index_data(
         self,

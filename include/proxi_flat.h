@@ -29,11 +29,14 @@
 #include <numeric>
 #include <omp.h>
 #include <queue>
+#include <random>
 #include <span>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include "mm_file.hpp"
 
 /**
  * @class ProxiFlat
@@ -63,7 +66,7 @@ protected:
      * @param value The value to convert.
      * @return std::vector<std::uint8_t> Byte vector representation.
      */
-    template <typename T> static std::vector<std::uint8_t> to_bytes(const T value) noexcept;
+    template <typename T> static std::vector<std::uint8_t> to_bytes(const T value);
 
     /**
      * @brief Converts a vector of strings to a byte vector, with a delimiter.
@@ -71,54 +74,81 @@ protected:
      * @return std::vector<std::uint8_t> Byte vector representation.
      * @deprecated This method is not currently used in the serialization process.
      */
-    std::vector<std::uint8_t> strings_to_bytes(const std::vector<std::string> &strs) noexcept;
+    std::vector<std::uint8_t> strings_to_bytes(const std::vector<std::string> &strs);
 
 private:
-    // Embeddings flattened for internal storage
+    /**
+     * @brief Embeddings flattened for internal storage (in-memory mode).
+     */
     std::vector<float> m_embeddings_flat;
 
-    // Document Chunks corresponding to embeddings
+    /**
+     * @brief Document Chunks corresponding to embeddings.
+     */
     std::vector<std::string> m_documents;
 
-    // Number of data samples (embeddings/documents)
+    /**
+     * @brief Number of data samples (embeddings/documents).
+     */
     size_t m_num_samples;
-    // Dimensionality of the embeddings
+
+    /**
+     * @brief Dimensionality of the embeddings.
+     */
     size_t m_num_features;
 
-    // Number of nearest neighbours to retrieve (K)
+    /**
+     * @brief Number of nearest neighbours to retrieve (K).
+     */
     size_t m_K;
 
-    // Flag indicating if data has been indexed
+    /**
+     * @brief Flag indicating if data has been indexed.
+     */
     bool m_is_indexed;
 
-    // Number of threads for parallel operations (e.g., batched queries)
+    /**
+     * @brief Number of threads for parallel operations (e.g., batched queries).
+     */
     size_t m_num_threads;
 
-    // Function pointer for the chosen distance/similarity metric
+    /**
+     * @brief Function pointer for the chosen distance/similarity metric.
+     */
     std::function<float(std::span<const float>, std::span<const float>)> m_objective_function;
 
-    // String identifier for the objective function (e.g., "l2", "cos")
+    /**
+     * @brief String identifier for the objective function (e.g., "l2", "cos").
+     */
     std::string m_objective_function_id;
+
+    /**
+     * @brief Flag to represent mode of operation. in-memory or memory-mapped.
+     */
+    bool m_in_memory = true;
+
+    /**
+     * @brief Path to file storing embeddings (memory-mapped mode).
+     */
+    std::string m_embeddings_file;
+
+    /**
+     * @brief Pointer to memory mapped file (memory-mapped mode).
+     */
+    std::unique_ptr<MemoryMappedFile> m_mm_file = nullptr;
+
+    std::vector<size_t> m_get_neighbours_memory(const std::vector<float> &query);
+
+    std::vector<size_t> m_get_neighbours_disk(const std::vector<float> &query);
 
     /**
      * @brief Internal helper to find K nearest neighbour indices for a single query.
      * @param query The query embedding.
      * @return std::vector<size_t> Indices of the K nearest neighbours.
-     * @note This method is marked noexcept but relies on m_objective_function which might throw.
-     *       Consider removing noexcept or ensuring m_objective_function cannot throw.
+     * @note This method is marked  but relies on m_objective_function which might throw.
+     *       Consider removing  or ensuring m_objective_function cannot throw.
      */
-    std::vector<size_t> m_get_neighbours(const std::vector<float> &query) noexcept;
-
-public:
-    /**
-     * @brief Constructs a ProxiFlat object.
-     * @param k Number of nearest neighbours to find.
-     * @param num_threads Number of threads for parallel operations.
-     * @param objective_function Name of the distance metric ("l1", "l2", "cos"). Defaults to "l2".
-     * @throws std::invalid_argument if an unsupported objective_function is provided.
-     */
-    ProxiFlat(const size_t k, const size_t num_threads,
-              const std::string objective_function = "l2");
+    std::vector<size_t> m_get_neighbours(const std::vector<float> &query);
 
     /**
      * @brief Indexes the provided embeddings and their corresponding documents.
@@ -128,6 +158,35 @@ public:
      * @throws std::invalid_argument if embeddings or documents are empty, or if their sizes
      * mismatch.
      * @throws std::runtime_error if embeddings have inconsistent dimensions.
+     */
+    void in_memory_index_data(const std::vector<std::vector<float>> &embeddings,
+                              const std::vector<std::string> &documents);
+
+    /**
+     * @brief Indexes the provided embeddings and their corresponding documents (memory-mapped
+     * mode). The number of features (embedding dimension) is inferred from the first embedding.
+     * @param embeddings A vector of embeddings (each embedding is a vector of floats).
+     * @param documents A vector of document strings, corresponding to each embedding.
+     * @throws std::invalid_argument if embeddings or documents are empty, or if their sizes
+     * mismatch.
+     * @throws std::runtime_error if embeddings have inconsistent dimensions.
+     */
+    void memory_mapped_index_data(const std::vector<std::vector<float>> &embeddings,
+                                  const std::vector<std::string> &documents);
+
+public:
+    /**
+     * @brief Constructs a ProxiFlat object.
+     * @param k Number of nearest neighbours to find.
+     * @param num_threads Number of threads for parallel operations.
+     * @param objective_function Name of the distance metric ("l1", "l2", "cos"). Defaults to "l2".
+     * @throws std::invalid_argument if an unsupported objective_function is provided.
+     */
+    ProxiFlat(const size_t k, const size_t num_threads, const bool in_memory,
+              const std::string objective_function = "l2");
+
+    /**
+     *
      */
     void index_data(const std::vector<std::vector<float>> &embeddings,
                     const std::vector<std::string> &documents);
@@ -146,19 +205,18 @@ public:
      * @return std::vector<std::vector<size_t>> For each query, a vector of K nearest neighbour
      * indices.
      * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
-     * @note The noexcept specifier might be violated if the single find_indices call throws.
+     * @note The  specifier might be violated if the single find_indices call throws.
      */
-    std::vector<std::vector<size_t>>
-    find_indices(const std::vector<std::vector<float>> &queries) noexcept;
+    std::vector<std::vector<size_t>> find_indices(const std::vector<std::vector<float>> &queries);
 
     /**
      * @brief Finds the K nearest documents for a single query embedding.
      * @param query The query embedding.
      * @return std::vector<std::string> The K nearest documents.
      * @throws std::runtime_error if data has not been indexed or if query dimension mismatches.
-     * @note The noexcept specifier might be violated if m_get_neighbours or find_indices throws.
+     * @note The  specifier might be violated if m_get_neighbours or find_indices throws.
      */
-    std::vector<std::string> find_docs(const std::vector<float> &query) noexcept;
+    std::vector<std::string> find_docs(const std::vector<float> &query);
 
     /**
      * @brief Finds the K nearest documents for a batch of query embeddings.
@@ -166,10 +224,9 @@ public:
      * @return std::vector<std::vector<std::string>> For each query, a vector of K nearest
      * documents.
      * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
-     * @note The noexcept specifier might be violated if the single find_docs call throws.
+     * @note The  specifier might be violated if the single find_docs call throws.
      */
-    std::vector<std::vector<std::string>>
-    find_docs(const std::vector<std::vector<float>> &queries) noexcept;
+    std::vector<std::vector<std::string>> find_docs(const std::vector<std::vector<float>> &queries);
 
     /**
      * @brief Inserts a new embedding and its corresponding document into the index.

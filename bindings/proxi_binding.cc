@@ -33,13 +33,16 @@ PYBIND11_MODULE(proxi_cpp, m) {
     py::class_<ProxiFlat>(m, "ProxiFlat",
                           "Main class for ProxiFlat, providing functionality for indexing "
                           "embeddings and performing nearest neighbour searches.")
-        // Parameterized Constructor
-        .def(py::init<size_t, size_t, const std::string &>(), py::arg("k"), py::arg("num_threads"),
+        // Parameterized Constructor (now with in_memory flag)
+        .def(py::init<size_t, size_t, bool, const std::string &>(), py::arg("k"),
+             py::arg("num_threads"), py::arg("in_memory") = true,
              py::arg("objective_function") = "l2",
              "Constructs a ProxiFlat instance.\n\n"
              "Args:\n"
              "    k (int): Number of nearest neighbours to find.\n"
              "    num_threads (int): Number of threads for parallel operations.\n"
+             "    in_memory (bool): If True, use in-memory storage. If False, use memory-mapped "
+             "file.\n"
              "    objective_function (str): Distance metric ('l1', 'l2', 'cos'). Defaults to 'l2'.")
 
         .def(
