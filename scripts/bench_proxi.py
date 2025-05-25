@@ -1,12 +1,15 @@
 import argparse
 import numpy as np
+# import sys
 from sklearn.model_selection import train_test_split
 from time import perf_counter_ns
 
 try:
     import proxiss
 except ImportError:
-    raise SystemExit("Could not import `proxi`. Build & install it first.")
+    raise SystemExit("Could not import `proxiss`. Build & install it first.")
+
+print(proxiss.__file__)
 
 
 def get_unit(ns: int):
