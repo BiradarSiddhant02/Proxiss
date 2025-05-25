@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "proxiss"
-version = "0.1.0"
+version = "0.1.1"
 description = "Proxi: Accelerating nearest-neighbor search for high-dimensional data!"
 authors = [
   {name = "Siddhant Biradar", email = "siddhant.biradar.pes@gmail.com"}
