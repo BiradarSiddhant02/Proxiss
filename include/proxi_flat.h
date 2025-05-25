@@ -54,6 +54,17 @@ protected:
      * @brief Serializes the ProxiFlat object into a byte vector.
      * @return std::vector<std::uint8_t> Byte vector of the serialized object.
      * @throws std::runtime_error if data has not been indexed.
+     *
+     * Serialization Format (in order):
+     * 1.  `m_num_samples` (size_t, 8 bytes)
+     * 2.  `m_num_features` (size_t, 8 bytes)
+     * 3.  `m_K` (size_t, 8 bytes)
+     * 4.  `m_is_indexed` (converted to size_t, 8 bytes)
+     * 5.  `m_num_threads` (size_t, 8 bytes)
+     * 6.  `m_objective_function_id` (char[8], 8 bytes, null-padded if shorter)
+     * 7.  `m_embeddings_flat` (float array, `m_num_samples * m_num_features * sizeof(float)` bytes)
+     * 8.  Document lengths (array of size_t, `m_num_samples * sizeof(size_t)` bytes)
+     * 9.  Document contents (concatenated char arrays, total length sum of individual doc lengths)
      */
     std::vector<std::uint8_t> serialise();
 
@@ -75,30 +86,30 @@ protected:
 
 private:
     // Embeddings flattened for internal storage
-    std::vector<float> m_embeddings_flat;
+    std::vector<float> m_embeddings_flat; ///< Flat storage of all embeddings
 
     // Document Chunks corresponding to embeddings
-    std::vector<std::string> m_documents;
+    std::vector<std::string> m_documents; ///< Documents corresponding to embeddings
 
     // Number of data samples (embeddings/documents)
-    size_t m_num_samples;
+    size_t m_num_samples; ///< Number of samples
     // Dimensionality of the embeddings
-    size_t m_num_features;
+    size_t m_num_features; ///< Embedding dimension
 
     // Number of nearest neighbours to retrieve (K)
-    size_t m_K;
+    size_t m_K; ///< Number of nearest neighbours
 
     // Flag indicating if data has been indexed
-    bool m_is_indexed;
+    bool m_is_indexed; ///< True if data is indexed
 
     // Number of threads for parallel operations (e.g., batched queries)
-    size_t m_num_threads;
+    size_t m_num_threads; ///< Number of threads for parallelism
 
     // Function pointer for the chosen distance/similarity metric
-    std::function<float(std::span<const float>, std::span<const float>)> m_objective_function;
+    std::function<float(std::span<const float>, std::span<const float>)> m_objective_function; ///< Distance/similarity function
 
     // String identifier for the objective function (e.g., "l2", "cos")
-    std::string m_objective_function_id;
+    std::string m_objective_function_id; ///< Objective function identifier
 
     /**
      * @brief Internal helper to find K nearest neighbour indices for a single query.
@@ -106,6 +117,12 @@ private:
      * @return std::vector<size_t> Indices of the K nearest neighbours.
      * @note This method is marked noexcept but relies on m_objective_function which might throw.
      *       Consider removing noexcept or ensuring m_objective_function cannot throw.
+     *
+     * The search is performed by iterating through all indexed samples and maintaining a
+     * min-priority queue (simulated with a max-priority queue storing negative distances or
+     * by inverting comparison for similarity) of the K closest items found so far.
+     *
+     * If `m_num_samples` is 0 or less than `m_K`, the behavior might be to return fewer than `m_K` indices.
      */
     std::vector<size_t> m_get_neighbours(const std::vector<float> &query) noexcept;
 
@@ -116,6 +133,10 @@ public:
      * @param num_threads Number of threads for parallel operations.
      * @param objective_function Name of the distance metric ("l1", "l2", "cos"). Defaults to "l2".
      * @throws std::invalid_argument if an unsupported objective_function is provided.
+     *
+     * Initializes the object with the number of nearest neighbours (K) to find,
+     * the number of threads for parallel operations, and the objective function
+     * (distance metric) to use. The object is initially not indexed.
      */
     ProxiFlat(const size_t k, const size_t num_threads,
               const std::string objective_function = "l2");
@@ -128,6 +149,10 @@ public:
      * @throws std::invalid_argument if embeddings or documents are empty, or if their sizes
      * mismatch.
      * @throws std::runtime_error if embeddings have inconsistent dimensions.
+     *
+     * Embeddings are flattened and stored internally. The dimensionality (number of features)
+     * is inferred from the first embedding. All subsequent embeddings must have the same dimension.
+     * After successful indexing, the `m_is_indexed` flag is set to true.
      */
     void index_data(const std::vector<std::vector<float>> &embeddings,
                     const std::vector<std::string> &documents);
@@ -147,6 +172,8 @@ public:
      * indices.
      * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
      * @note The noexcept specifier might be violated if the single find_indices call throws.
+     *
+     * This operation is parallelized using OpenMP based on `m_num_threads`.
      */
     std::vector<std::vector<size_t>>
     find_indices(const std::vector<std::vector<float>> &queries) noexcept;
@@ -167,6 +194,8 @@ public:
      * documents.
      * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
      * @note The noexcept specifier might be violated if the single find_docs call throws.
+     *
+     * This operation is parallelized using OpenMP based on `m_num_threads`.
      */
     std::vector<std::vector<std::string>>
     find_docs(const std::vector<std::vector<float>> &queries) noexcept;
@@ -178,6 +207,12 @@ public:
      * @throws std::invalid_argument if the embedding dimension mismatches the existing data.
      * @throws std::runtime_error if data was not indexed prior to insertion (if m_num_features is
      * 0).
+     *
+     * The new embedding is appended to the internal flat embedding store, and the document
+     * is added to the document list. The total number of samples (`m_num_samples`) is incremented.
+     * This method assumes the ProxiFlat instance has been initialized (e.g., `m_num_features` is set,
+     * typically by a prior call to `index_data` or by loading an existing index).
+     * If `m_num_features` is 0 (e.g. on a newly constructed, un-indexed instance), this could lead to issues.
      */
     void insert_data(const std::vector<float> &embedding, const std::string &text);
 
@@ -187,6 +222,10 @@ public:
      * @param path The directory path where the data file will be saved.
      * @throws std::runtime_error if data has not been indexed or if saving fails (e.g., path
      * issues, write errors).
+     *
+     * The method first checks if the provided path is a valid, existing directory.
+     * It then calls the internal `serialise()` method to get the byte representation
+     * of the object and writes these bytes to "data.bin" in the given directory.
      */
     void save_state(const std::string &path);
 
@@ -196,6 +235,12 @@ public:
      * @param path Path to the serialized ProxiFlat data file ("data.bin").
      * @throws std::runtime_error if loading fails (e.g., file not found, corrupted data, version
      * mismatch).
+     *
+     * This method reads the byte stream from the specified file path (expected to be "data.bin"),
+     * deserializes it, and populates the current ProxiFlat instance's members
+     * (`m_num_samples`, `m_num_features`, `m_K`, `m_is_indexed`, `m_num_threads`,
+     * `m_objective_function_id`, `m_embeddings_flat`, `m_documents`).
+     * It also re-initializes the `m_objective_function` based on the loaded ID.
      */
     void load_state(const std::string &path);
 };
