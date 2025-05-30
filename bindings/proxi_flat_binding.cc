@@ -16,7 +16,6 @@
 
 #include "proxi_flat.h"
 #include <cstring>
-#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
@@ -28,7 +27,7 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(proxi_flat_cpp, m) {
     m.doc() =
-        "Proxi: A C++ library for fast approximate nearest neighbour search, with Python bindings.";
+        "ProxiFlat: A C++ library for fast nearest neighbour search";
 
     py::class_<ProxiFlat>(m, "ProxiFlat",
                           "Main class for ProxiFlat, providing functionality for indexing "
