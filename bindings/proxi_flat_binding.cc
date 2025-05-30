@@ -26,7 +26,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(proxi_cpp, m) {
+PYBIND11_MODULE(proxi_flat_cpp, m) {
     m.doc() =
         "Proxi: A C++ library for fast approximate nearest neighbour search, with Python bindings.";
 

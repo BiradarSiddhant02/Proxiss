@@ -1,7 +1,6 @@
-import proxi_cpp  # type: ignore
 import numpy as np
 from typing import List, Union
-
+import proxi_flat_cpp
 
 class ProxiFlat:
     """
@@ -17,6 +16,7 @@ class ProxiFlat:
         save_state(path): Saves the current index state to disk.
         load_state(path): Loads the index state from disk.
     """
+
     def __init__(self, k: int, num_threads: int, objective_function: str = "l2") -> None:
         """
         Initialize the ProxiFlat index.
@@ -33,7 +33,7 @@ class ProxiFlat:
         if num_threads <= 0:
             raise ValueError("num_threads cannot be 0 or negative.")
 
-        self.module = proxi_cpp.ProxiFlat(k, num_threads, objective_function)
+        self.module = proxi_flat_cpp.ProxiFlat(k, num_threads, objective_function)
 
     def index_data(
         self,
