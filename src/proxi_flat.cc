@@ -133,7 +133,6 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
     } else {
         throw std::runtime_error("Invalid Distance function.");
     }
-
 }
 
 void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,

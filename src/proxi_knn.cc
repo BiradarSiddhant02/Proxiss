@@ -1,15 +1,16 @@
 #include "proxi_knn.h"
-#include <unordered_map>
 #include <algorithm>
 #include <omp.h>
+#include <unordered_map>
 
 ProxiKNN::ProxiKNN(const size_t n_neighbours, const size_t n_jobs,
                    const std::string &distance_function)
     : m_K(n_neighbours), m_num_jobs(n_jobs), m_objective_function_id(distance_function),
-      base_model(std::make_unique<ProxiFlat>(n_neighbours, n_jobs, distance_function)), m_is_fitted(false) {}
+      base_model(std::make_unique<ProxiFlat>(n_neighbours, n_jobs, distance_function)),
+      m_is_fitted(false) {}
 
 void ProxiKNN::fit(const std::vector<std::vector<float>> &feature_vectors,
-              const std::vector<float> &labels) {
+                   const std::vector<float> &labels) {
 
     std::vector<std::string> label_strings(feature_vectors.size());
     std::transform(labels.begin(), labels.end(), label_strings.begin(),
@@ -43,7 +44,7 @@ std::vector<float> ProxiKNN::predict(const std::vector<std::vector<float>> &feat
     omp_set_num_threads(m_num_jobs);
     std::vector<float> results(feature_vectors.size());
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < feature_vectors.size(); i++) {
         results[i] = predict(feature_vectors[i]);
     }

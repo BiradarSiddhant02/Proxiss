@@ -29,7 +29,7 @@ PYBIND11_MODULE(proxi_knn_cpp, m) {
     m.doc() = "ProxiKNN: A library for fast KNN algorithm.";
 
     py::class_<ProxiKNN>(m, "ProxiKNN",
-                          "Main class for ProxiKNN, providing functionality for KNN classification.")
+                         "Main class for ProxiKNN, providing functionality for KNN classification.")
         // Parameterized Constructor
         .def(py::init<size_t, size_t, const std::string &>(), py::arg("n_neighbours"),
              py::arg("n_jobs"), py::arg("distance_function") = "l2",
@@ -74,7 +74,7 @@ PYBIND11_MODULE(proxi_knn_cpp, m) {
                 } else {
                     throw std::runtime_error("Labels array must be 1D");
                 }
-                
+
                 self.fit(cpp_features, cpp_labels);
             },
             py::arg("features"), py::arg("labels"),

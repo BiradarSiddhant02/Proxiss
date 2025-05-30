@@ -106,7 +106,8 @@ private:
     size_t m_num_threads; ///< Number of threads for parallelism
 
     // Function pointer for the chosen distance/similarity metric
-    std::function<float(std::span<const float>, std::span<const float>)> m_objective_function; ///< Distance/similarity function
+    std::function<float(std::span<const float>, std::span<const float>)>
+        m_objective_function; ///< Distance/similarity function
 
     // String identifier for the objective function (e.g., "l2", "cos")
     std::string m_objective_function_id; ///< Objective function identifier
@@ -122,7 +123,8 @@ private:
      * min-priority queue (simulated with a max-priority queue storing negative distances or
      * by inverting comparison for similarity) of the K closest items found so far.
      *
-     * If `m_num_samples` is 0 or less than `m_K`, the behavior might be to return fewer than `m_K` indices.
+     * If `m_num_samples` is 0 or less than `m_K`, the behavior might be to return fewer than `m_K`
+     * indices.
      */
     std::vector<size_t> m_get_neighbours(const std::vector<float> &query) noexcept;
 
@@ -210,9 +212,10 @@ public:
      *
      * The new embedding is appended to the internal flat embedding store, and the document
      * is added to the document list. The total number of samples (`m_num_samples`) is incremented.
-     * This method assumes the ProxiFlat instance has been initialized (e.g., `m_num_features` is set,
-     * typically by a prior call to `index_data` or by loading an existing index).
-     * If `m_num_features` is 0 (e.g. on a newly constructed, un-indexed instance), this could lead to issues.
+     * This method assumes the ProxiFlat instance has been initialized (e.g., `m_num_features` is
+     * set, typically by a prior call to `index_data` or by loading an existing index). If
+     * `m_num_features` is 0 (e.g. on a newly constructed, un-indexed instance), this could lead to
+     * issues.
      */
     void insert_data(const std::vector<float> &embedding, const std::string &text);
 

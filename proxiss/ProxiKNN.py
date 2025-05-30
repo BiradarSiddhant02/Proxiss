@@ -2,6 +2,7 @@ import numpy as np
 from typing import List, Union
 import proxi_knn_cpp
 
+
 class ProxiKNN:
     """
     Python wrapper for the C++ ProxiKNN class, providing K-Nearest Neighbors classification.
@@ -52,13 +53,13 @@ class ProxiKNN:
             try:
                 features_np = np.array(features, dtype=np.float32)
                 if (
-                    features_np.ndim == 1
-                    and len(features) > 0
-                    and isinstance(features[0], list)
+                    features_np.ndim == 1 and len(features) > 0 and isinstance(features[0], list)
                 ):  # list of lists but became 1D (e.g. [[1,2], []])
                     pass  # Allow, C++ might handle or error on inconsistent dimensions
                 elif features_np.ndim == 0 and len(features) == 0:  # Handles []
-                    features_np = np.array([], dtype=np.float32).reshape(0, 0)  # Correctly make it 2D empty
+                    features_np = np.array([], dtype=np.float32).reshape(
+                        0, 0
+                    )  # Correctly make it 2D empty
                 elif features_np.ndim != 2 and not (
                     features_np.ndim == 1 and features_np.shape[0] == 0
                 ):
@@ -72,9 +73,7 @@ class ProxiKNN:
                 features_np = features.astype(np.float32)
             else:
                 features_np = features
-            if not (
-                features_np.ndim == 2 or (features_np.ndim == 1 and features_np.shape[0] == 0)
-            ):
+            if not (features_np.ndim == 2 or (features_np.ndim == 1 and features_np.shape[0] == 0)):
                 # If it's an empty 1D array, reshape to (0,0) for C++
                 if features_np.ndim == 1 and features_np.shape[0] == 0:
                     features_np = features_np.reshape(0, 0)

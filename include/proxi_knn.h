@@ -11,7 +11,7 @@ private:
     size_t m_K;
     size_t m_num_jobs;
     const std::string m_objective_function_id;
-    std::unique_ptr<ProxiFlat> base_model;   
+    std::unique_ptr<ProxiFlat> base_model;
     bool m_is_fitted;
 
 public:
@@ -28,7 +28,8 @@ public:
      * @param feature_vectors list of vectors i.e., training data
      * @param labels list of labels
      */
-    void fit(const std::vector<std::vector<float>> &feature_vectors, const std::vector<float> &labels);
+    void fit(const std::vector<std::vector<float>> &feature_vectors,
+             const std::vector<float> &labels);
 
     /**
      * @brief Predicts the class labels of the provided data
@@ -39,4 +40,4 @@ public:
     std::vector<float> predict(const std::vector<std::vector<float>> &feature_vectors);
 };
 
-#endif // PROXI_KNN_H 
+#endif // PROXI_KNN_H

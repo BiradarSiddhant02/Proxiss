@@ -26,8 +26,7 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(proxi_flat_cpp, m) {
-    m.doc() =
-        "ProxiFlat: A C++ library for fast nearest neighbour search";
+    m.doc() = "ProxiFlat: A C++ library for fast nearest neighbour search";
 
     py::class_<ProxiFlat>(m, "ProxiFlat",
                           "Main class for ProxiFlat, providing functionality for indexing "

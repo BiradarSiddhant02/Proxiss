@@ -2,6 +2,7 @@ import numpy as np
 from typing import List, Union
 import proxi_flat_cpp
 
+
 class ProxiFlat:
     """
     Python wrapper for the C++ ProxiFlat class, providing high-performance nearest-neighbor search.
