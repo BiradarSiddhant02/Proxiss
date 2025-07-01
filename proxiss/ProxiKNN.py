@@ -107,7 +107,7 @@ class ProxiKNN:
 
         self.module.fit(features_np, labels_np)
 
-    def predict(self, feature: Union[List[float], np.ndarray]) -> float:
+    def predict(self, feature: Union[List[float], np.ndarray]) -> int:
         """
         Predict the class label for a single feature vector.
 
@@ -136,7 +136,7 @@ class ProxiKNN:
         if feature_np.ndim != 1:
             raise ValueError("Feature must be a 1D array.")
 
-        return self.module.predict(feature_np)
+        return int(self.module.predict(feature_np))
 
     def predict_batch(self, features: Union[List[List[float]], np.ndarray]) -> np.ndarray:
         """
