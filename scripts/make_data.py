@@ -33,7 +33,7 @@ def main():
     X = X.astype(np.float32)
 
     print(f"Generating {args.N} mock document strings...")
-    docs = np.array([f"class_{y[i]}" for i in range(args.N)], dtype=object)
+    docs = np.array([f"{y[i]}" for i in range(args.N)], dtype=object)
 
     print(f"Saving feature array to '{args.X_path}' and documents to '{args.docs_path}'...")
     np.save(args.X_path, X)
