@@ -33,29 +33,16 @@ inline float euclidean_distance(std::span<const float> A, std::span<const float>
      * @returns A float which is the euclidean distance between the two input vectors.
      */
 
-    size_t length = A.size();
-    __m256 sum = _mm256_setzero_ps();
-    size_t i = 0;
+    float distance = 0.0f;
+    size_t len = A.size();
 
-    for (; i + 8 <= length; i += 8) {
-        __m256 va = _mm256_loadu_ps(A.data() + i);
-        __m256 vb = _mm256_loadu_ps(B.data() + i);
-        __m256 diff = _mm256_sub_ps(va, vb);
-        __m256 sq = _mm256_mul_ps(diff, diff);
-        sum = _mm256_add_ps(sum, sq);
-    }
-
-    float buffer[8];
-    _mm256_storeu_ps(buffer, sum);
-    float distance = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
-                     buffer[6] + buffer[7];
-
-    for (; i < length; i++) {
+#pragma omp simd reduction(+:distance)
+    for (size_t i = 0; i < len; i++) {
         float diff = A[i] - B[i];
         distance += diff * diff;
     }
 
-    return std::sqrt(distance);
+    return std::sqrtf(distance);
 }
 
 inline float manhattan_distance(std::span<const float> A, std::span<const float> B) {
@@ -68,28 +55,16 @@ inline float manhattan_distance(std::span<const float> A, std::span<const float>
      * @returns A float which is the euclidean distance between the two input vectors.
      */
 
-    size_t length = A.size();
-    __m256 sum = _mm256_setzero_ps();
-    size_t i = 0;
+    float distance = 0.0f;
+    size_t len = A.size();
 
-    for (; i + 8 <= length; i += 8) {
-        __m256 va = _mm256_loadu_ps(A.data() + i);
-        __m256 vb = _mm256_loadu_ps(B.data() + i);
-        __m256 diff = _mm256_sub_ps(va, vb);
-        __m256 abs_diff = _mm256_andnot_ps(_mm256_set1_ps(-0.0f), diff); // abs(x)
-        sum = _mm256_add_ps(sum, abs_diff);
-    }
-
-    float buffer[8];
-    _mm256_storeu_ps(buffer, sum);
-    float distance = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
-                     buffer[6] + buffer[7];
-
-    for (; i < length; i++) {
+#pragma omp simd reduction(+:distance)
+    for (size_t i = 0; i < len; i++) {
         distance += std::fabs(A[i] - B[i]);
     }
 
     return distance;
+
 }
 
 inline float dot(std::span<const float> A, std::span<const float> B) {
@@ -102,27 +77,14 @@ inline float dot(std::span<const float> A, std::span<const float> B) {
      * @returns A float which is the euclidean distance between the two input vectors.
      */
 
-    size_t length = A.size();
-    __m256 sum = _mm256_setzero_ps();
-    size_t i = 0;
+    float dot = 0.0f;
+    size_t len = A.size();
 
-    for (; i + 8 <= length; i += 8) {
-        __m256 va = _mm256_loadu_ps(A.data() + i);
-        __m256 vb = _mm256_loadu_ps(B.data() + i);
-        __m256 prod = _mm256_mul_ps(va, vb);
-        sum = _mm256_add_ps(sum, prod);
-    }
+#pragma omp simd reduction(+:dot)
+    for (size_t i = 0; i < len; i++)
+        dot += A[i] * B[i];
 
-    float buffer[8];
-    _mm256_storeu_ps(buffer, sum);
-    float dot_sum = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
-                    buffer[6] + buffer[7];
-
-    for (; i < length; i++) {
-        dot_sum += A[i] * B[i];
-    }
-
-    return dot_sum;
+    return dot;
 }
 
 inline float l2_norm(std::span<const float> A) {
@@ -135,25 +97,7 @@ inline float l2_norm(std::span<const float> A) {
      * @returns A float which is the euclidean distance between the two input vectors.
      */
 
-    size_t length = A.size();
-    __m256 sum = _mm256_setzero_ps();
-    size_t i = 0;
-
-    for (; i + 8 <= length; i += 8) {
-        __m256 v = _mm256_loadu_ps(A.data() + i);
-        sum = _mm256_fmadd_ps(v, v, sum);
-    }
-
-    float buffer[8];
-    _mm256_storeu_ps(buffer, sum);
-    float sum_of_squares = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] +
-                           buffer[6] + buffer[7];
-
-    for (; i < length; i++) {
-        sum_of_squares += A[i] * A[i];
-    }
-
-    return std::sqrt(sum_of_squares);
+    return euclidean_distance(A, A);
 }
 
 inline float cosine_similarity(std::span<const float> A, std::span<const float> B) {

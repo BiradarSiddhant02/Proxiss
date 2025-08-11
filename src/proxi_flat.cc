@@ -15,6 +15,22 @@
  */
 
 // --- proxi_flat.cc --- //
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <numeric>
+#include <omp.h>
+#include <queue>
+#include <span>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "proxi_flat.h"
 #include "distance.hpp"
@@ -41,6 +57,7 @@ std::vector<std::uint8_t> ProxiFlat::serialise() {
 
     // Word 6: m_objective_function_id, padded to 8 bytes
     std::vector<std::uint8_t> fnc_id_serial(8, 0);
+    #pragma clang loop vectorize(enable)
     for (size_t i = 0; i < std::min<size_t>(8, m_objective_function_id.size()); ++i)
         fnc_id_serial[i] = static_cast<std::uint8_t>(m_objective_function_id[i]);
     insert_bytes(fnc_id_serial);

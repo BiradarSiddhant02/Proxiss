@@ -24,12 +24,15 @@ void ProxiKNN::fit(const std::vector<std::vector<float>> &feature_vectors,
 float ProxiKNN::predict(const std::vector<float> &feature_vector) {
     std::vector<std::string> neighbours = base_model->find_docs(feature_vector);
     std::unordered_map<float, size_t> votes;
+    // This loop has vectorization issues due to unordered_map operations
+    // Consider using a different data structure if performance is critical
     for (const auto &neighbour : neighbours) {
         votes[std::strtof(neighbour.c_str(), nullptr)]++;
     }
     float best_value = -1.0f;
     size_t max_votes = 0;
 
+    // This loop also has early exit issues
     for (const auto &[label, count] : votes) {
         if (count > max_votes) {
             best_value = label;
