@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "proxiss"
-version = "0.2.0"
+version = "0.3.0"
 description = "Proxi: Accelerating nearest-neighbor search for high-dimensional data!"
 authors = [
   {name = "Siddhant Biradar", email = "siddhant.biradar.pes@gmail.com"}
@@ -14,7 +14,12 @@ license = {text = "LICENSE"}
 requires-python = ">=3.9"
 dependencies = [
   "numpy>=1.20",
-  "ply", "six", "scipy", "sympy==1.11.1"
+  "ply",
+  "six",
+  "scipy",
+  "sympy==1.11.1",
+  "scikit-build-core>=0.11.5",
+  "pytest>=8.4.1",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
