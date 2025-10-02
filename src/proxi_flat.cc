@@ -32,6 +32,7 @@
 #include <utility>
 #include <vector>
 
+#include "priority_queue.h"
 #include "proxi_flat.h"
 #include "distance.hpp"
 
@@ -67,16 +68,6 @@ std::vector<std::uint8_t> ProxiFlat::serialise() {
         insert_bytes(ProxiFlat::to_bytes<float>(val));
     }
 
-    // ---- Serialize text documents ----
-    // Insert string lengths
-    for (const std::string &doc : m_documents)
-        insert_bytes(ProxiFlat::to_bytes<size_t>(doc.length()));
-
-    // Insert strings
-    for (const std::string &doc : m_documents) {
-        insert_bytes(std::vector<std::uint8_t>{doc.begin(), doc.end()});
-    }
-
     return object;
 }
 
@@ -103,12 +94,12 @@ ProxiFlat::strings_to_bytes(const std::vector<std::string> &strs) noexcept {
 
 // PRIVATE
 std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float> &query) noexcept {
-
     using pair = std::pair<float, size_t>;
 
-    std::priority_queue<pair> heap;
+    PriorityQueue heap;
+    heap.reserve(m_K + 1); // avoid reallocs
 
-    long long int num_samples = static_cast<long long int>(m_num_samples);
+    long long int num_samples  = static_cast<long long int>(m_num_samples);
     long long int num_features = static_cast<long long int>(m_num_features);
 
 #pragma omp for nowait
@@ -117,17 +108,21 @@ std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float> &query)
             std::span<const float>(query),
             std::span<const float>(m_embeddings_flat).subspan(i * num_features, num_features));
 
-        bool should_insert = heap.size() < m_K;
-        bool should_replace = !should_insert && distance < heap.top().first;
+        const float key = -distance; // invert to use implicit min-heap as max-heap
+
+        bool should_insert  = heap.size() < m_K;
+        bool should_replace = !should_insert && key > heap.top().first;
 
         if (should_insert || should_replace) {
             if (should_replace)
                 heap.pop();
-            heap.emplace(distance, i);
+            heap.push({key, static_cast<size_t>(i)});
         }
     }
 
     std::vector<size_t> indices;
+    indices.reserve(heap.size()); // reserve to avoid realloc
+
     while (!heap.empty()) {
         indices.push_back(heap.top().second);
         heap.pop();
@@ -152,18 +147,12 @@ ProxiFlat::ProxiFlat(const size_t k, const size_t num_threads, const std::string
     }
 }
 
-void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings,
-                           const std::vector<std::string> &documents) {
+void ProxiFlat::index_data(const std::vector<std::vector<float>> &embeddings) {
 
-    if (embeddings.empty() || documents.empty())
-        throw std::runtime_error("Embeddings or Documents cannot be empty.");
+    if (embeddings.empty())
+        throw std::runtime_error("Embeddings cannot be empty.");
 
-    if (embeddings.size() != documents.size())
-        throw std::runtime_error("Size of embeddings and corpus are unequal");
-
-    m_documents = documents;
-
-    m_num_samples = documents.size();
+    m_num_samples = embeddings.size();
     m_num_features = embeddings[0].size();
 
     m_embeddings_flat.resize(m_num_features * m_num_samples);
@@ -206,41 +195,12 @@ ProxiFlat::find_indices(const std::vector<std::vector<float>> &queries) noexcept
     return indices;
 }
 
-std::vector<std::string> ProxiFlat::find_docs(const std::vector<float> &query) noexcept {
-
-    std::vector<size_t> neighbours = m_get_neighbours(query);
-
-    std::vector<std::string> docs(m_K);
-    for (size_t i = 0; i < m_K; i++)
-        docs[i] = m_documents[neighbours[i]];
-
-    return docs;
-}
-
-std::vector<std::vector<std::string>>
-ProxiFlat::find_docs(const std::vector<std::vector<float>> &queries) noexcept {
-
-    omp_set_num_threads(m_num_threads);
-
-    std::vector<std::vector<std::string>> results(queries.size());
-
-    long long int num_queries = static_cast<long long int>(queries.size());
-
-#pragma omp parallel for
-    for (long long int i = 0; i < num_queries; i++) {
-        results[i] = find_docs(queries[i]);
-    }
-
-    return results;
-}
-
-void ProxiFlat::insert_data(const std::vector<float> &embedding, const std::string &text) {
+void ProxiFlat::insert_data(const std::vector<float> &embedding) {
 
     if (embedding.size() != m_num_features)
         throw std::runtime_error("Invalid embedding vector size.");
 
     m_embeddings_flat.insert(m_embeddings_flat.end(), embedding.begin(), embedding.end());
-    m_documents.push_back(text);
 
     m_num_samples++;
 }
@@ -346,28 +306,6 @@ void ProxiFlat::load_state(const std::string &path_str) {
         m_embeddings_flat.resize(num_floats);
         std::memcpy(m_embeddings_flat.data(), buffer.data() + offset, embeddings_size);
         offset += embeddings_size;
-
-        // ---- Documents ----
-        m_documents.clear();
-        std::vector<size_t> doc_lengths(m_num_samples);
-
-        // Read lengths
-        for (size_t i = 0; i < m_num_samples; ++i) {
-            if (offset + sizeof(size_t) > buffer.size()) {
-                throw std::runtime_error("File truncated: missing document length data");
-            }
-            doc_lengths[i] = *reinterpret_cast<const size_t *>(buffer.data() + offset);
-            offset += sizeof(size_t);
-        }
-
-        // Read strings
-        for (size_t len : doc_lengths) {
-            if (offset + len > buffer.size()) {
-                throw std::runtime_error("File truncated: missing document content");
-            }
-            m_documents.emplace_back(reinterpret_cast<const char *>(buffer.data() + offset), len);
-            offset += len;
-        }
 
     } catch (const std::filesystem::filesystem_error &error) {
         throw std::runtime_error("Filesystem error: " + std::string(error.what()));

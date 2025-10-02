@@ -8,12 +8,10 @@ class ProxiFlat:
     Python wrapper for the C++ ProxiFlat class, providing high-performance nearest-neighbor search.
 
     Methods:
-        index_data(embeddings, documents): Indexes embeddings and associated documents.
+        index_data(embeddings): Indexes embeddings.
         find_indices(query): Finds indices of nearest neighbors for a single query.
         find_indices_batched(queries): Finds indices for a batch of queries.
-        find_docs(query): Finds documents for a single query.
-        find_docs_batched(queries): Finds documents for a batch of queries.
-        insert_data(embedding, text): Inserts a single embedding and document.
+        insert_data(embedding): Inserts a single embedding.
         save_state(path): Saves the current index state to disk.
         load_state(path): Loads the index state from disk.
     """
@@ -39,14 +37,12 @@ class ProxiFlat:
     def index_data(
         self,
         embeddings: Union[List[List[float]], np.ndarray, None],
-        documents: Union[List[str], np.ndarray],
     ) -> None:
         """
-        Index the provided embeddings and associated documents.
+        Index the provided embeddings.
 
         Args:
             embeddings (List[List[float]] | np.ndarray | None): 2D array or list of embedding vectors, or None for empty.
-            documents (List[str] | np.ndarray): 1D array or list of document strings.
         Raises:
             ValueError: If input shapes are invalid or conversion fails.
             TypeError: If input types are invalid.
@@ -87,32 +83,7 @@ class ProxiFlat:
         else:
             raise TypeError("Embeddings must be a list of lists, a NumPy array, or None.")
 
-        documents_np: np.ndarray
-        if isinstance(documents, list):
-            try:
-                # Attempt to create a NumPy array of strings (objects for pybind11)
-                documents_np = np.array(documents, dtype=object)
-            except Exception as e:  # Catch generic exception if conversion fails
-                raise ValueError(f"Error converting documents list to NumPy array: {e}")
-        elif isinstance(documents, np.ndarray):
-            documents_np = documents  # Assume it's already a 1D array of strings or compatible
-        else:
-            raise TypeError("Documents must be a list of strings or a 1D NumPy array.")
-
-        # Ensure documents_np is 1D for C++ bindings, then convert to list for C++
-        final_documents_list: list[str]
-        if documents_np.ndim != 1:
-            # Allow documents_np to be an empty array with shape (0,)
-            # but if it has elements, it must be strictly 1D.
-            if documents_np.size > 0:
-                raise ValueError("Documents NumPy array must be 1D.")
-            # Handle cases like np.array([[]]) which is (1,0) or np.empty((0,X))
-            # These should become an empty list for the C++ binding.
-            final_documents_list = []
-        else:
-            final_documents_list = documents_np.tolist()
-
-        self.module.index_data(embeddings_np, final_documents_list)
+        self.module.index_data(embeddings_np)
 
     def find_indices(self, query: Union[List[float], np.ndarray]) -> np.ndarray:
         """
@@ -202,94 +173,12 @@ class ProxiFlat:
         result_list_of_lists = self.module.find_indices_batched(queries_np)
         return np.array(result_list_of_lists, dtype=np.int32)
 
-    def find_docs(self, query: Union[List[float], np.ndarray]) -> List[str]:
+    def insert_data(self, embedding: Union[List[float], np.ndarray]) -> None:
         """
-        Find the documents corresponding to the k nearest neighbors for a single query vector.
-
-        Args:
-            query (List[float] | np.ndarray): 1D query vector.
-        Returns:
-            List[str]: Documents of nearest neighbors.
-        Raises:
-            ValueError: If input shape is invalid or conversion fails.
-            TypeError: If input type is invalid.
-        """
-        query_np: np.ndarray
-        if isinstance(query, list):
-            try:
-                query_np = np.array(query, dtype=np.float32)
-            except ValueError as e:
-                raise ValueError(f"Error converting query list to NumPy array: {e}")
-        elif isinstance(query, np.ndarray):
-            if query.dtype != np.float32:
-                query_np = query.astype(np.float32)
-            else:
-                query_np = query
-        else:
-            raise TypeError("Query must be a list of floats or a 1D NumPy array.")
-
-        if query_np.ndim != 1:
-            raise ValueError("Query must be a 1D array.")
-
-        # C++ returns list[str]
-        return self.module.find_docs(query_np)
-
-    def find_docs_batched(self, queries: Union[List[List[float]], np.ndarray]) -> List[List[str]]:
-        """
-        Find the documents corresponding to the k nearest neighbors for a batch of queries.
-
-        Args:
-            queries (List[List[float]] | np.ndarray): 2D array or list of query vectors.
-        Returns:
-            List[List[str]]: Documents of nearest neighbors for each query.
-        Raises:
-            ValueError: If input shape is invalid or conversion fails.
-            TypeError: If input type is invalid.
-        """
-        queries_np: np.ndarray
-        if isinstance(queries, list):
-            try:
-                queries_np = np.array(queries, dtype=np.float32)
-                if queries_np.ndim == 1 and len(queries) > 0 and isinstance(queries[0], list):
-                    pass  # Allow
-                elif queries_np.ndim == 0 and len(queries) == 0:
-                    queries_np = np.array([], dtype=np.float32).reshape(0, 0)
-                elif queries_np.ndim != 2 and not (
-                    queries_np.ndim == 1 and queries_np.shape[0] == 0
-                ):
-                    raise ValueError(
-                        "Batched queries list must be convertible to a 2D NumPy array or an empty 1D array for empty case."
-                    )
-            except ValueError as e:
-                raise ValueError(f"Error converting batched queries list to NumPy array: {e}")
-        elif isinstance(queries, np.ndarray):
-            if queries.dtype != np.float32:
-                queries_np = queries.astype(np.float32)
-            else:
-                queries_np = queries
-        else:
-            raise TypeError(
-                "Batched queries must be a list of lists of floats or a 2D NumPy array."
-            )
-
-        if not (queries_np.ndim == 2 or (queries_np.ndim == 1 and queries_np.shape[0] == 0)):
-            if queries_np.ndim == 1 and queries_np.shape[0] == 0:
-                queries_np = queries_np.reshape(0, 0)
-            else:
-                raise ValueError(
-                    "Batched queries NumPy array must be 2D (e.g., (M, D)) or an empty 1D array."
-                )
-
-        # C++ returns list[list[str]]
-        return self.module.find_docs_batched(queries_np)
-
-    def insert_data(self, embedding: Union[List[float], np.ndarray], text: str) -> None:
-        """
-        Insert a single embedding and its associated document into the index.
+        Insert a single embedding into the index.
 
         Args:
             embedding (List[float] | np.ndarray): 1D embedding vector.
-            text (str): Document string.
         Raises:
             ValueError: If input shape is invalid or conversion fails.
             TypeError: If input type is invalid.
@@ -311,10 +200,7 @@ class ProxiFlat:
         if embedding_np.ndim != 1:
             raise ValueError("Embedding must be a 1D array.")
 
-        if not isinstance(text, str):
-            raise TypeError("Text must be a string.")
-
-        self.module.insert_data(embedding_np, text)
+        self.module.insert_data(embedding_np)
 
     def save_state(self, path: str) -> None:
         """

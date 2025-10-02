@@ -12,6 +12,7 @@ private:
     size_t m_num_jobs;
     const std::string m_objective_function_id;
     std::unique_ptr<ProxiFlat> base_model;
+    std::vector<float> m_labels;
     bool m_is_fitted;
 
 public:
@@ -38,6 +39,21 @@ public:
      */
     float predict(const std::vector<float> &feature_vector);
     std::vector<float> predict(const std::vector<std::vector<float>> &feature_vectors);
+
+    /**
+     * @brief Persists the trained model state to the specified directory.
+     * @param path Directory where the state should be saved.
+     * @throws std::runtime_error if the model has not been fitted or if saving fails.
+     */
+    void save_state(const std::string &path);
+
+    /**
+     * @brief Loads a previously persisted model state from the specified directory.
+     * @param path Directory containing the saved state.
+     * @throws std::runtime_error if loading fails or if metadata is incompatible with the
+     * current configuration.
+     */
+    void load_state(const std::string &path);
 };
 
 #endif // PROXI_KNN_H

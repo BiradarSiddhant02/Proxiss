@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from typing import List, Union
 import proxi_knn_cpp
@@ -190,3 +191,37 @@ class ProxiKNN:
         # C++ returns list[float], convert to NumPy array
         result_list = self.module.predict_batch(features_np)
         return np.array(result_list, dtype=np.float32)
+
+    def save_state(self, path: Union[str, os.PathLike]) -> None:
+        """
+        Persist the trained classifier to disk using the underlying C++ serializer.
+
+        Args:
+            path (str | os.PathLike): Directory where the state should be saved. A file named
+                ``data.bin`` will be created inside this directory.
+        Raises:
+            TypeError: If ``path`` is not a string or path-like object.
+            RuntimeError: Propagated from the C++ layer if the model is not fitted or saving
+                fails.
+        """
+
+        if not isinstance(path, (str, os.PathLike)):
+            raise TypeError("path must be a string or an os.PathLike object.")
+
+        self.module.save_state(os.fspath(path))
+
+    def load_state(self, path: Union[str, os.PathLike]) -> None:
+        """
+        Restore a previously saved classifier.
+
+        Args:
+            path (str | os.PathLike): Path to the ``data.bin`` file produced by ``save_state``.
+        Raises:
+            TypeError: If ``path`` is not a string or path-like object.
+            RuntimeError: Propagated from the C++ layer if the file cannot be read or is invalid.
+        """
+
+        if not isinstance(path, (str, os.PathLike)):
+            raise TypeError("path must be a string or an os.PathLike object.")
+
+        self.module.load_state(os.fspath(path))

@@ -114,7 +114,7 @@ class TestProxiKNN:
         empty_features = np.array([], dtype=np.float32).reshape(0, 2)
         empty_labels = np.array([], dtype=np.float32)
 
-        with pytest.raises(RuntimeError, match="Embeddings or Documents cannot be empty"):
+        with pytest.raises(RuntimeError, match="Embeddings cannot be empty"):
             knn.fit(empty_features, empty_labels)
 
     def test_input_type_validation(self):
@@ -167,6 +167,36 @@ class TestProxiKNN:
         pred_multi = knn_multi.predict(test_point)
 
         assert pred_single == pred_multi
+
+    def test_save_and_load_roundtrip(self, tmp_path):
+        """Ensure ProxiKNN can persist and restore model state via ProxiFlat serializer."""
+
+        features = np.array(
+            [
+                [1.0, 1.0],
+                [1.1, 1.0],
+                [5.0, 5.0],
+                [5.1, 5.2],
+            ],
+            dtype=np.float32,
+        )
+        labels = np.array([0.0, 0.0, 1.0, 1.0], dtype=np.float32)
+
+        save_dir = tmp_path / "state"
+        save_dir.mkdir()
+
+        knn = ProxiKNN(n_neighbours=2, n_jobs=1, distance_function="l2")
+        knn.fit(features, labels)
+        knn.save_state(save_dir)
+
+        data_file = save_dir / "data.bin"
+        assert data_file.exists()
+
+        restored = ProxiKNN(n_neighbours=2, n_jobs=1, distance_function="l2")
+        restored.load_state(str(save_dir))
+
+        test_point = np.array([1.05, 1.05], dtype=np.float32)
+        assert restored.predict(test_point) == 0.0
 
 
 if __name__ == "__main__":

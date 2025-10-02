@@ -128,5 +128,27 @@ PYBIND11_MODULE(proxi_knn_cpp, m) {
             "Args:\n"
             "    features (numpy.ndarray): A 2D NumPy array of feature vectors (M, D).\n\n"
             "Returns:\n"
-            "    list[float]: Predicted class labels for each feature vector.");
+            "    list[float]: Predicted class labels for each feature vector.")
+
+        .def(
+            "save_state",
+            [](ProxiKNN &self, py::object path_obj) {
+                std::string path = py::str(path_obj);
+                self.save_state(path);
+            },
+            py::arg("path"),
+            "Saves the trained model state using the underlying ProxiFlat serializer.\n\n"
+            "Args:\n"
+            "    path (str | os.PathLike): Directory where the state file should be written.\n")
+
+        .def(
+            "load_state",
+            [](ProxiKNN &self, py::object path_obj) {
+                std::string path = py::str(path_obj);
+                self.load_state(path);
+            },
+            py::arg("path"),
+            "Loads previously saved model state using the underlying ProxiFlat loader.\n\n"
+            "Args:\n"
+            "    path (str | os.PathLike): Path to the saved data file (e.g., data.bin).\n");
 }

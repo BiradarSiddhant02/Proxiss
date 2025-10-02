@@ -43,8 +43,7 @@ PYBIND11_MODULE(proxi_flat_cpp, m) {
         .def(
             "index_data",
             [](ProxiFlat &self,
-               py::array_t<float, py::array::c_style | py::array::forcecast> embeddings_arr,
-               py::list documents_list) { // Changed documents_arr to documents_list (py::list)
+               py::array_t<float, py::array::c_style | py::array::forcecast> embeddings_arr) {
                 std::vector<std::vector<float>> cpp_embeddings;
                 if (embeddings_arr.ndim() == 2) {
                     cpp_embeddings.resize(embeddings_arr.shape(0));
@@ -67,18 +66,12 @@ PYBIND11_MODULE(proxi_flat_cpp, m) {
                 }
                 // Removed explicit error throw for embeddings_arr dimensions
 
-                std::vector<std::string> cpp_documents;
-                cpp_documents.reserve(documents_list.size());
-                for (const auto &item : documents_list) { // Iterate over py::list
-                    cpp_documents.push_back(item.cast<std::string>());
-                }
-                self.index_data(cpp_embeddings, cpp_documents);
+                self.index_data(cpp_embeddings);
             },
-            py::arg("embeddings"), py::arg("documents"),
-            "Indexes the provided embeddings and documents.\n\n"
+            py::arg("embeddings"),
+            "Indexes the provided embeddings.\n\n"
             "Args:\n"
-            "    embeddings (numpy.ndarray): A 2D NumPy array of floats (N, D).\n"
-            "    documents (list[str]): A list of N strings.")
+            "    embeddings (numpy.ndarray): A 2D NumPy array of floats (N, D).\n")
 
         // --- Single-query methods ---
         .def(
@@ -101,27 +94,6 @@ PYBIND11_MODULE(proxi_flat_cpp, m) {
             "    query (numpy.ndarray): The 1D query embedding.\n\n"
             "Returns:\n"
             "    list[int]: Indices of the K nearest neighbours.")
-        .def(
-            "find_docs",
-            [](ProxiFlat &self,
-               py::array_t<float, py::array::c_style | py::array::forcecast> query_arr) {
-                if (query_arr.ndim() != 1) {
-                    throw std::runtime_error("Input query array must be 1D");
-                }
-                std::vector<float> cpp_query(query_arr.shape(0));
-                if (query_arr.shape(0) > 0) {
-                    std::memcpy(cpp_query.data(), query_arr.data(),
-                                query_arr.shape(0) * sizeof(float));
-                }
-                return self.find_docs(cpp_query);
-            },
-            py::arg("query"),
-            "Finds the K nearest documents for a single query embedding.\n\n"
-            "Args:\n"
-            "    query (numpy.ndarray): The 1D query embedding.\n\n"
-            "Returns:\n"
-            "    list[str]: The K nearest documents.")
-
         // --- Batched-query methods ---
         .def(
             "find_indices_batched",
@@ -150,36 +122,9 @@ PYBIND11_MODULE(proxi_flat_cpp, m) {
             "    list[list[int]]: For each query, a list of K nearest neighbour indices.")
 
         .def(
-            "find_docs_batched",
-            [](ProxiFlat &self,
-               py::array_t<float, py::array::c_style | py::array::forcecast> queries_arr) {
-                if (queries_arr.ndim() != 2) {
-                    throw std::runtime_error("Input queries array must be 2D (M, D)");
-                }
-                std::vector<std::vector<float>> cpp_queries(queries_arr.shape(0));
-                const float *queries_data_ptr = queries_arr.data();
-                for (size_t i = 0; i < queries_arr.shape(0); ++i) {
-                    cpp_queries[i].resize(queries_arr.shape(1));
-                    if (queries_arr.shape(1) > 0) { // Ensure there's something to copy for this row
-                        std::memcpy(cpp_queries[i].data(),
-                                    queries_data_ptr + i * queries_arr.shape(1),
-                                    queries_arr.shape(1) * sizeof(float));
-                    }
-                }
-                return self.find_docs(cpp_queries); // Calls overloaded ProxiFlat::find_docs
-            },
-            py::arg("queries"),
-            "Finds K nearest documents for a batch of query embeddings.\n\n"
-            "Args:\n"
-            "    queries (numpy.ndarray): A 2D NumPy array of query embeddings (M, D).\n\n"
-            "Returns:\n"
-            "    list[list[str]]: For each query, a list of K nearest documents.")
-
-        .def(
             "insert_data",
             [](ProxiFlat &self,
-               py::array_t<float, py::array::c_style | py::array::forcecast> embedding_arr,
-               const std::string &text) {
+               py::array_t<float, py::array::c_style | py::array::forcecast> embedding_arr) {
                 if (embedding_arr.ndim() != 1) {
                     throw std::runtime_error("Input embedding array must be 1D");
                 }
@@ -188,13 +133,12 @@ PYBIND11_MODULE(proxi_flat_cpp, m) {
                     std::memcpy(cpp_embedding.data(), embedding_arr.data(),
                                 embedding_arr.shape(0) * sizeof(float));
                 }
-                self.insert_data(cpp_embedding, text);
+                self.insert_data(cpp_embedding);
             },
-            py::arg("embedding"), py::arg("text"),
-            "Inserts a new embedding and its corresponding document into the index.\n\n"
+            py::arg("embedding"),
+            "Inserts a new embedding into the index.\n\n"
             "Args:\n"
-            "    embedding (numpy.ndarray): The 1D embedding to insert.\n"
-            "    text (str): The document text to insert.")
+            "    embedding (numpy.ndarray): The 1D embedding to insert.\n")
 
         .def("save_state", &ProxiFlat::save_state, py::arg("path"),
              "Saves the ProxiFlat index and data to a directory.\n\n"

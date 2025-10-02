@@ -39,7 +39,7 @@
  * @class ProxiFlat
  * @brief A class for performing fast approximate nearest neighbour searches.
  *
- * ProxiFlat stores embeddings and their corresponding documents (text).
+ * ProxiFlat stores embeddings only (no documents).
  * It allows indexing this data and then querying for the K nearest neighbours
  * of a given query embedding. Embeddings are stored internally as a flat
  * vector for efficiency, but are handled as std::vector<std::vector<float>>
@@ -63,8 +63,6 @@ protected:
      * 5.  `m_num_threads` (size_t, 8 bytes)
      * 6.  `m_objective_function_id` (char[8], 8 bytes, null-padded if shorter)
      * 7.  `m_embeddings_flat` (float array, `m_num_samples * m_num_features * sizeof(float)` bytes)
-     * 8.  Document lengths (array of size_t, `m_num_samples * sizeof(size_t)` bytes)
-     * 9.  Document contents (concatenated char arrays, total length sum of individual doc lengths)
      */
     std::vector<std::uint8_t> serialise();
 
@@ -88,10 +86,7 @@ private:
     // Embeddings flattened for internal storage
     std::vector<float> m_embeddings_flat; ///< Flat storage of all embeddings
 
-    // Document Chunks corresponding to embeddings
-    std::vector<std::string> m_documents; ///< Documents corresponding to embeddings
-
-    // Number of data samples (embeddings/documents)
+    // Number of data samples (embeddings)
     size_t m_num_samples; ///< Number of samples
     // Dimensionality of the embeddings
     size_t m_num_features; ///< Embedding dimension
@@ -144,20 +139,17 @@ public:
               const std::string objective_function = "l2");
 
     /**
-     * @brief Indexes the provided embeddings and their corresponding documents.
+     * @brief Indexes the provided embeddings.
      * The number of features (embedding dimension) is inferred from the first embedding.
      * @param embeddings A vector of embeddings (each embedding is a vector of floats).
-     * @param documents A vector of document strings, corresponding to each embedding.
-     * @throws std::invalid_argument if embeddings or documents are empty, or if their sizes
-     * mismatch.
+     * @throws std::invalid_argument if embeddings are empty.
      * @throws std::runtime_error if embeddings have inconsistent dimensions.
      *
      * Embeddings are flattened and stored internally. The dimensionality (number of features)
      * is inferred from the first embedding. All subsequent embeddings must have the same dimension.
      * After successful indexing, the `m_is_indexed` flag is set to true.
      */
-    void index_data(const std::vector<std::vector<float>> &embeddings,
-                    const std::vector<std::string> &documents);
+    void index_data(const std::vector<std::vector<float>> &embeddings);
 
     /**
      * @brief Finds the indices of the K nearest neighbours for a single query embedding.
@@ -180,44 +172,43 @@ public:
     std::vector<std::vector<size_t>>
     find_indices(const std::vector<std::vector<float>> &queries) noexcept;
 
-    /**
-     * @brief Finds the K nearest documents for a single query embedding.
-     * @param query The query embedding.
-     * @return std::vector<std::string> The K nearest documents.
-     * @throws std::runtime_error if data has not been indexed or if query dimension mismatches.
-     * @note The noexcept specifier might be violated if m_get_neighbours or find_indices throws.
-     */
-    std::vector<std::string> find_docs(const std::vector<float> &query) noexcept;
+    // /**
+    //  * @brief Finds the K nearest documents for a single query embedding.
+    //  * @param query The query embedding.
+    //  * @return std::vector<std::string> The K nearest documents.
+    //  * @throws std::runtime_error if data has not been indexed or if query dimension mismatches.
+    //  * @note The noexcept specifier might be violated if m_get_neighbours or find_indices throws.
+    //  */
+    // std::vector<std::string> find_docs(const std::vector<float> &query) noexcept;
+
+    // /**
+    //  * @brief Finds the K nearest documents for a batch of query embeddings.
+    //  * @param queries A vector of query embeddings.
+    //  * @return std::vector<std::vector<std::string>> For each query, a vector of K nearest
+    //  * documents.
+    //  * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
+    //  * @note The noexcept specifier might be violated if the single find_docs call throws.
+    //  *
+    //  * This operation is parallelized using OpenMP based on `m_num_threads`.
+    //  */
+    // std::vector<std::vector<std::string>>
+    // find_docs(const std::vector<std::vector<float>> &queries) noexcept;
 
     /**
-     * @brief Finds the K nearest documents for a batch of query embeddings.
-     * @param queries A vector of query embeddings.
-     * @return std::vector<std::vector<std::string>> For each query, a vector of K nearest
-     * documents.
-     * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
-     * @note The noexcept specifier might be violated if the single find_docs call throws.
-     *
-     * This operation is parallelized using OpenMP based on `m_num_threads`.
-     */
-    std::vector<std::vector<std::string>>
-    find_docs(const std::vector<std::vector<float>> &queries) noexcept;
-
-    /**
-     * @brief Inserts a new embedding and its corresponding document into the index.
+     * @brief Inserts a new embedding into the index.
      * @param embedding The embedding to insert.
-     * @param text The document text to insert.
      * @throws std::invalid_argument if the embedding dimension mismatches the existing data.
      * @throws std::runtime_error if data was not indexed prior to insertion (if m_num_features is
      * 0).
      *
-     * The new embedding is appended to the internal flat embedding store, and the document
-     * is added to the document list. The total number of samples (`m_num_samples`) is incremented.
+     * The new embedding is appended to the internal flat embedding store.
+     * The total number of samples (`m_num_samples`) is incremented.
      * This method assumes the ProxiFlat instance has been initialized (e.g., `m_num_features` is
      * set, typically by a prior call to `index_data` or by loading an existing index). If
      * `m_num_features` is 0 (e.g. on a newly constructed, un-indexed instance), this could lead to
      * issues.
      */
-    void insert_data(const std::vector<float> &embedding, const std::string &text);
+    void insert_data(const std::vector<float> &embedding);
 
     /**
      * @brief Saves the current ProxiFlat object (index and data) to a directory.
