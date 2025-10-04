@@ -54,7 +54,7 @@ def main():
 
     print("\nBuilding Proxi index...")
     proxi_index = ProxiFlat(k=k, num_threads=4, objective_function="l2")
-    proxi_index.index_data(embeddings_f32, text_np)
+    proxi_index.index_data(embeddings_f32)
 
     print("Building FAISS index...")
     dimension = embeddings_f32.shape[1]
@@ -80,13 +80,14 @@ def main():
         input_embedding_reshaped = input_embedding.reshape(1, -1).astype(np.float32)
 
         proxi_start = perf_counter_ns()
-        proxi_results = proxi_index.find_docs(input_embedding_reshaped[0].tolist())
+        proxi_indices = proxi_index.find_indices(input_embedding_reshaped[0])
         proxi_end = perf_counter_ns()
+        proxi_results = [text_np[idx] for idx in proxi_indices]
 
         faiss_start = perf_counter_ns()
         _, faiss_indices = faiss_index.search(input_embedding_reshaped, k)
-        faiss_results = [text_np[idx] for idx in faiss_indices[0]]
         faiss_end = perf_counter_ns()
+        faiss_results = [text_np[idx] for idx in faiss_indices[0]]
 
         print(f"\nSimilarity search results for: '{user_input}'")
 
