@@ -101,3 +101,31 @@ void ProxiKNN::load_state(const std::string &path) {
     
     m_is_fitted = true;
 }
+
+void ProxiKNN::set_n_neighbours(const size_t n_neighbours) {
+    if (n_neighbours == 0) {
+        throw std::invalid_argument("n_neighbours must be greater than 0");
+    }
+    m_K = n_neighbours;
+    if (base_model) {
+        base_model->set_k(n_neighbours);
+    }
+}
+
+void ProxiKNN::set_n_jobs(const size_t n_jobs) {
+    if (n_jobs == 0) {
+        throw std::invalid_argument("n_jobs must be greater than 0");
+    }
+    m_num_jobs = n_jobs;
+    if (base_model) {
+        base_model->set_num_threads(n_jobs);
+    }
+}
+
+size_t ProxiKNN::get_n_neighbours() const noexcept {
+    return m_K;
+}
+
+size_t ProxiKNN::get_n_jobs() const noexcept {
+    return m_num_jobs;
+}

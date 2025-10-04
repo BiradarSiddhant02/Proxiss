@@ -225,3 +225,47 @@ class ProxiKNN:
             raise TypeError("path must be a string or an os.PathLike object.")
 
         self.module.load_state(os.fspath(path))
+
+    def set_n_neighbours(self, n_neighbours: int) -> None:
+        """
+        Set the number of nearest neighbors to use for prediction.
+
+        Args:
+            n_neighbours (int): The new number of neighbors (must be > 0).
+        Raises:
+            ValueError: If n_neighbours is not positive.
+        """
+        if n_neighbours <= 0:
+            raise ValueError("n_neighbours must be greater than 0")
+        self.module.set_n_neighbours(n_neighbours)
+
+    def set_n_jobs(self, n_jobs: int) -> None:
+        """
+        Set the number of parallel jobs for prediction.
+
+        Args:
+            n_jobs (int): The new number of parallel jobs (must be > 0).
+        Raises:
+            ValueError: If n_jobs is not positive.
+        """
+        if n_jobs <= 0:
+            raise ValueError("n_jobs must be greater than 0")
+        self.module.set_n_jobs(n_jobs)
+
+    def get_n_neighbours(self) -> int:
+        """
+        Get the current number of nearest neighbors.
+
+        Returns:
+            int: Current number of neighbors.
+        """
+        return self.module.get_n_neighbours()
+
+    def get_n_jobs(self) -> int:
+        """
+        Get the current number of parallel jobs.
+
+        Returns:
+            int: Current number of parallel jobs.
+        """
+        return self.module.get_n_jobs()

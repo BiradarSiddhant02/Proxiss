@@ -172,27 +172,7 @@ public:
     std::vector<std::vector<size_t>>
     find_indices(const std::vector<std::vector<float>> &queries) noexcept;
 
-    // /**
-    //  * @brief Finds the K nearest documents for a single query embedding.
-    //  * @param query The query embedding.
-    //  * @return std::vector<std::string> The K nearest documents.
-    //  * @throws std::runtime_error if data has not been indexed or if query dimension mismatches.
-    //  * @note The noexcept specifier might be violated if m_get_neighbours or find_indices throws.
-    //  */
-    // std::vector<std::string> find_docs(const std::vector<float> &query) noexcept;
 
-    // /**
-    //  * @brief Finds the K nearest documents for a batch of query embeddings.
-    //  * @param queries A vector of query embeddings.
-    //  * @return std::vector<std::vector<std::string>> For each query, a vector of K nearest
-    //  * documents.
-    //  * @throws std::runtime_error if data has not been indexed or if any query dimension mismatches.
-    //  * @note The noexcept specifier might be violated if the single find_docs call throws.
-    //  *
-    //  * This operation is parallelized using OpenMP based on `m_num_threads`.
-    //  */
-    // std::vector<std::vector<std::string>>
-    // find_docs(const std::vector<std::vector<float>> &queries) noexcept;
 
     /**
      * @brief Inserts a new embedding into the index.
@@ -237,4 +217,30 @@ public:
      * It also re-initializes the `m_objective_function` based on the loaded ID.
      */
     void load_state(const std::string &path);
+
+    /**
+     * @brief Sets the number of nearest neighbors to retrieve.
+     * @param k The new number of neighbors (must be > 0).
+     * @throws std::invalid_argument if k is 0.
+     */
+    void set_k(const size_t k);
+
+    /**
+     * @brief Sets the number of threads for parallel operations.
+     * @param num_threads The new number of threads (must be > 0).
+     * @throws std::invalid_argument if num_threads is 0.
+     */
+    void set_num_threads(const size_t num_threads);
+
+    /**
+     * @brief Gets the current number of nearest neighbors.
+     * @return Current value of k.
+     */
+    size_t get_k() const noexcept;
+
+    /**
+     * @brief Gets the current number of threads.
+     * @return Current number of threads.
+     */
+    size_t get_num_threads() const noexcept;
 };

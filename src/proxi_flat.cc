@@ -313,3 +313,25 @@ void ProxiFlat::load_state(const std::string &path_str) {
         throw std::runtime_error("Load failed: " + std::string(e.what()));
     }
 }
+
+void ProxiFlat::set_k(const size_t k) {
+    if (k == 0) {
+        throw std::invalid_argument("k must be greater than 0");
+    }
+    m_K = k;
+}
+
+void ProxiFlat::set_num_threads(const size_t num_threads) {
+    if (num_threads == 0) {
+        throw std::invalid_argument("num_threads must be greater than 0");
+    }
+    m_num_threads = num_threads;
+}
+
+size_t ProxiFlat::get_k() const noexcept {
+    return m_K;
+}
+
+size_t ProxiFlat::get_num_threads() const noexcept {
+    return m_num_threads;
+}

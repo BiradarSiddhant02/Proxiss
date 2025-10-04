@@ -150,5 +150,25 @@ PYBIND11_MODULE(proxi_knn_cpp, m) {
             py::arg("path"),
             "Loads previously saved model state using the underlying ProxiFlat loader.\n\n"
             "Args:\n"
-            "    path (str | os.PathLike): Path to the saved data file (e.g., data.bin).\n");
+            "    path (str | os.PathLike): Path to the saved data file (e.g., data.bin).\n")
+
+        .def("set_n_neighbours", &ProxiKNN::set_n_neighbours, py::arg("n_neighbours"),
+             "Sets the number of nearest neighbors to use for prediction.\n\n"
+             "Args:\n"
+             "    n_neighbours (int): The new number of neighbors (must be > 0).")
+
+        .def("set_n_jobs", &ProxiKNN::set_n_jobs, py::arg("n_jobs"),
+             "Sets the number of parallel jobs for prediction.\n\n"
+             "Args:\n"
+             "    n_jobs (int): The new number of parallel jobs (must be > 0).")
+
+        .def("get_n_neighbours", &ProxiKNN::get_n_neighbours,
+             "Gets the current number of nearest neighbors.\n\n"
+             "Returns:\n"
+             "    int: Current number of neighbors.")
+
+        .def("get_n_jobs", &ProxiKNN::get_n_jobs,
+             "Gets the current number of parallel jobs.\n\n"
+             "Returns:\n"
+             "    int: Current number of parallel jobs.");
 }

@@ -230,6 +230,86 @@ class TestProxiFlat(unittest.TestCase):
         with self.assertRaises(RuntimeError):  # Or std::invalid_argument if mapped
             proxiss.ProxiFlat(self.k, self.num_threads, "invalid_function")
 
+    def test_13_setter_getter_k(self):
+        """Test setting and getting the k parameter."""
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
+        
+        # Test initial value
+        self.assertEqual(idx.get_k(), self.k)
+        
+        # Test setting new values
+        idx.set_k(5)
+        self.assertEqual(idx.get_k(), 5)
+        
+        idx.set_k(10)
+        self.assertEqual(idx.get_k(), 10)
+        
+        # Test invalid values
+        with self.assertRaises(ValueError):
+            idx.set_k(0)
+        
+        with self.assertRaises(ValueError):
+            idx.set_k(-1)
+
+    def test_14_setter_getter_num_threads(self):
+        """Test setting and getting the num_threads parameter."""
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
+        
+        # Test initial value
+        self.assertEqual(idx.get_num_threads(), self.num_threads)
+        
+        # Test setting new values
+        idx.set_num_threads(4)
+        self.assertEqual(idx.get_num_threads(), 4)
+        
+        idx.set_num_threads(8)
+        self.assertEqual(idx.get_num_threads(), 8)
+        
+        # Test invalid values
+        with self.assertRaises(ValueError):
+            idx.set_num_threads(0)
+            
+        with self.assertRaises(ValueError):
+            idx.set_num_threads(-1)
+
+    def test_15_setters_affect_search_behavior(self):
+        """Test that changing k affects search results."""
+        idx = proxiss.ProxiFlat(2, self.num_threads, "l2")
+        idx.index_data(self.embeddings)
+        
+        # Test with k=2
+        result_k2 = idx.find_indices(self.query_vector_exact)
+        self.assertEqual(len(result_k2), 2)
+        
+        # Change k to 3 and test
+        idx.set_k(3)
+        result_k3 = idx.find_indices(self.query_vector_exact)
+        self.assertEqual(len(result_k3), 3)
+        
+        # Change k to 1 and test
+        idx.set_k(1)
+        result_k1 = idx.find_indices(self.query_vector_exact)
+        self.assertEqual(len(result_k1), 1)
+
+    def test_16_setters_after_indexing(self):
+        """Test that setters work correctly even after data has been indexed."""
+        idx = proxiss.ProxiFlat(self.k, self.num_threads, "l2")
+        idx.index_data(self.embeddings)
+        
+        # Verify initial search works
+        initial_result = idx.find_indices(self.query_vector_exact)
+        self.assertEqual(len(initial_result), self.k)
+        
+        # Change parameters after indexing
+        idx.set_k(4)
+        idx.set_num_threads(2)
+        
+        # Verify search still works with new parameters
+        new_result = idx.find_indices(self.query_vector_exact)
+        self.assertEqual(len(new_result), 4)
+        self.assertEqual(idx.get_k(), 4)
+        self.assertEqual(idx.get_num_threads(), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

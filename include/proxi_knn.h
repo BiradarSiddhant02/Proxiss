@@ -54,6 +54,32 @@ public:
      * current configuration.
      */
     void load_state(const std::string &path);
+
+    /**
+     * @brief Sets the number of nearest neighbors to use for prediction.
+     * @param n_neighbours The new number of neighbors (must be > 0).
+     * @throws std::invalid_argument if n_neighbours is 0.
+     */
+    void set_n_neighbours(const size_t n_neighbours);
+
+    /**
+     * @brief Sets the number of parallel jobs for prediction.
+     * @param n_jobs The new number of parallel jobs (must be > 0).
+     * @throws std::invalid_argument if n_jobs is 0.
+     */
+    void set_n_jobs(const size_t n_jobs);
+
+    /**
+     * @brief Gets the current number of nearest neighbors.
+     * @return Current number of neighbors.
+     */
+    size_t get_n_neighbours() const noexcept;
+
+    /**
+     * @brief Gets the current number of parallel jobs.
+     * @return Current number of parallel jobs.
+     */
+    size_t get_n_jobs() const noexcept;
 };
 
 #endif // PROXI_KNN_H

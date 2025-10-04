@@ -149,5 +149,25 @@ PYBIND11_MODULE(proxi_flat_cpp, m) {
         .def("load_state", &ProxiFlat::load_state, py::arg("path"),
              "Loads the ProxiFlat index and data from a file.\n\n"
              "Args:\n"
-             "    path (str): Path to the serialized ProxiFlat data file (e.g., 'data.bin').");
+             "    path (str): Path to the serialized ProxiFlat data file (e.g., 'data.bin').")
+
+        .def("set_k", &ProxiFlat::set_k, py::arg("k"),
+             "Sets the number of nearest neighbors to retrieve.\n\n"
+             "Args:\n"
+             "    k (int): The new number of neighbors (must be > 0).")
+
+        .def("set_num_threads", &ProxiFlat::set_num_threads, py::arg("num_threads"),
+             "Sets the number of threads for parallel operations.\n\n"
+             "Args:\n"
+             "    num_threads (int): The new number of threads (must be > 0).")
+
+        .def("get_k", &ProxiFlat::get_k,
+             "Gets the current number of nearest neighbors.\n\n"
+             "Returns:\n"
+             "    int: Current value of k.")
+
+        .def("get_num_threads", &ProxiFlat::get_num_threads,
+             "Gets the current number of threads.\n\n"
+             "Returns:\n"
+             "    int: Current number of threads.");
 }

@@ -219,3 +219,47 @@ class ProxiFlat:
             path (str): File path to load the state from.
         """
         self.module.load_state(path)
+
+    def set_k(self, k: int) -> None:
+        """
+        Set the number of nearest neighbors to retrieve.
+
+        Args:
+            k (int): The new number of neighbors (must be > 0).
+        Raises:
+            ValueError: If k is not positive.
+        """
+        if k <= 0:
+            raise ValueError("k must be greater than 0")
+        self.module.set_k(k)
+
+    def set_num_threads(self, num_threads: int) -> None:
+        """
+        Set the number of threads for parallel operations.
+
+        Args:
+            num_threads (int): The new number of threads (must be > 0).
+        Raises:
+            ValueError: If num_threads is not positive.
+        """
+        if num_threads <= 0:
+            raise ValueError("num_threads must be greater than 0")
+        self.module.set_num_threads(num_threads)
+
+    def get_k(self) -> int:
+        """
+        Get the current number of nearest neighbors.
+
+        Returns:
+            int: Current value of k.
+        """
+        return self.module.get_k()
+
+    def get_num_threads(self) -> int:
+        """
+        Get the current number of threads.
+
+        Returns:
+            int: Current number of threads.
+        """
+        return self.module.get_num_threads()

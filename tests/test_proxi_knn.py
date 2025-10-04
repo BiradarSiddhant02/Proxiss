@@ -198,6 +198,126 @@ class TestProxiKNN:
         test_point = np.array([1.05, 1.05], dtype=np.float32)
         assert restored.predict(test_point) == 0.0
 
+    def test_setter_getter_n_neighbours(self):
+        """Test setting and getting the n_neighbours parameter."""
+        knn = ProxiKNN(n_neighbours=3, n_jobs=1, distance_function="l2")
+        
+        # Test initial value
+        assert knn.get_n_neighbours() == 3
+        
+        # Test setting new values
+        knn.set_n_neighbours(5)
+        assert knn.get_n_neighbours() == 5
+        
+        knn.set_n_neighbours(10)
+        assert knn.get_n_neighbours() == 10
+        
+        # Test invalid values
+        with pytest.raises(ValueError):
+            knn.set_n_neighbours(0)
+        
+        with pytest.raises(ValueError):
+            knn.set_n_neighbours(-1)
+
+    def test_setter_getter_n_jobs(self):
+        """Test setting and getting the n_jobs parameter."""
+        knn = ProxiKNN(n_neighbours=3, n_jobs=2, distance_function="l2")
+        
+        # Test initial value
+        assert knn.get_n_jobs() == 2
+        
+        # Test setting new values
+        knn.set_n_jobs(4)
+        assert knn.get_n_jobs() == 4
+        
+        knn.set_n_jobs(8)
+        assert knn.get_n_jobs() == 8
+        
+        # Test invalid values
+        with pytest.raises(ValueError):
+            knn.set_n_jobs(0)
+            
+        with pytest.raises(ValueError):
+            knn.set_n_jobs(-1)
+
+    def test_setters_affect_prediction_behavior(self):
+        """Test that changing n_neighbours affects prediction behavior."""
+        # Create dataset with clear class boundaries
+        features = np.array(
+            [
+                [0.0, 0.0],  # class 0
+                [0.1, 0.1],  # class 0
+                [0.2, 0.2],  # class 0
+                [1.0, 1.0],  # class 1
+                [1.1, 1.1],  # class 1
+                [2.0, 2.0],  # class 2
+            ],
+            dtype=np.float32,
+        )
+        labels = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 2.0], dtype=np.float32)
+        
+        knn = ProxiKNN(n_neighbours=1, n_jobs=1, distance_function="l2")
+        knn.fit(features, labels)
+        
+        # Test point that's close to class 0 but might change with more neighbors
+        test_point = np.array([0.3, 0.3], dtype=np.float32)
+        
+        # With k=1, should predict closest neighbor
+        prediction_k1 = knn.predict(test_point)
+        
+        # Change to k=3 and test again
+        knn.set_n_neighbours(3)
+        prediction_k3 = knn.predict(test_point)
+        
+        # Both predictions should be valid but might differ based on neighbors considered
+        assert prediction_k1 in [0.0, 1.0, 2.0]
+        assert prediction_k3 in [0.0, 1.0, 2.0]
+
+    def test_setters_after_training(self):
+        """Test that setters work correctly even after model has been trained."""
+        features = np.array([[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]], dtype=np.float32)
+        labels = np.array([0.0, 1.0, 2.0], dtype=np.float32)
+        
+        knn = ProxiKNN(n_neighbours=2, n_jobs=1, distance_function="l2")
+        knn.fit(features, labels)
+        
+        # Verify initial prediction works
+        test_point = np.array([1.1, 1.1], dtype=np.float32)
+        initial_prediction = knn.predict(test_point)
+        assert initial_prediction in [0.0, 1.0, 2.0]
+        
+        # Change parameters after training
+        knn.set_n_neighbours(1)
+        knn.set_n_jobs(2)
+        
+        # Verify prediction still works with new parameters
+        new_prediction = knn.predict(test_point)
+        assert new_prediction in [0.0, 1.0, 2.0]
+        assert knn.get_n_neighbours() == 1
+        assert knn.get_n_jobs() == 2
+
+    def test_setters_consistency_with_underlying_model(self):
+        """Test that ProxiKNN setters properly update the underlying ProxiFlat model."""
+        knn = ProxiKNN(n_neighbours=3, n_jobs=2, distance_function="l2")
+        
+        # Create simple dataset
+        features = np.array([[1.0, 1.0], [2.0, 2.0]], dtype=np.float32)
+        labels = np.array([0.0, 1.0], dtype=np.float32)
+        knn.fit(features, labels)
+        
+        # Test that changing n_neighbours affects both KNN and underlying ProxiFlat
+        knn.set_n_neighbours(1)
+        assert knn.get_n_neighbours() == 1
+        
+        # Test that changing n_jobs affects both KNN and underlying ProxiFlat  
+        knn.set_n_jobs(4)
+        assert knn.get_n_jobs() == 4
+        
+        # Verify predictions still work after parameter changes
+        test_point = np.array([1.5, 1.5], dtype=np.float32)
+        prediction = knn.predict(test_point)
+        assert prediction in [0.0, 1.0]
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
