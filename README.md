@@ -227,15 +227,7 @@ uv venv
 source .venv/bin/activate
 
 # Install development dependencies
-uv pip install -e .
-uv pip install pytest numpy
-
-# Clean build (if needed)
-rm -rf build/
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
-cd ..
+uv pip install -r requirements.txt
 
 # Reinstall after C++ changes
 uv pip install -e . --force-reinstall --no-deps
