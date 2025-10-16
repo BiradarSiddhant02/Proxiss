@@ -1,12 +1,21 @@
 #!/bin/bash
-set -e
 
-# # Build Windows wheels for x86_64
-# CIBW_PLATFORM=windows
-# CIBW_ARCHS="AMD64"
-# cibuildwheel --output-dir dist --platform windows --arch "$CIBW_ARCHS"
+source venv_py3_9/bin/activate
+uv pip install poetry
+poetry build -v
 
-# Build Linux wheels for x86_64
-CIBW_PLATFORM=linux
-CIBW_ARCHS="x86_64"
-cibuildwheel --output-dir dist --platform linux --arch "$CIBW_ARCHS"
+source venv_py3_10/bin/activate
+uv pip install poetry
+poetry build -v
+
+source venv_py3_11/bin/activate
+uv pip install poetry
+poetry build -v
+
+source venv_py3_12/bin/activate
+uv pip install poetry
+poetry build -v
+
+source venv_py3_13/bin/activate
+uv pip install poetry
+poetry build -v

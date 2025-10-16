@@ -7,3 +7,4 @@ proxi.egg*
 __pycache__
 dist
 .pytest_cache
+*venv*
