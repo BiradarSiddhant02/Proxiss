@@ -42,7 +42,7 @@ inline float euclidean_distance(std::span<const float> A, std::span<const float>
         distance += diff * diff;
     }
 
-    return std::sqrtf(distance);
+    return std::sqrt(distance);
 }
 
 inline float manhattan_distance(std::span<const float> A, std::span<const float> B) {
