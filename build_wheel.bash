@@ -1,21 +1,9 @@
 #!/bin/bash
 
-source venv_py3_9/bin/activate
-uv pip install poetry
-poetry build -v
+# Build manylinux wheels with cibuildwheel
+# Skips musllinux builds
 
-source venv_py3_10/bin/activate
-uv pip install poetry
-poetry build -v
-
-source venv_py3_11/bin/activate
-uv pip install poetry
-poetry build -v
-
-source venv_py3_12/bin/activate
-uv pip install poetry
-poetry build -v
-
-source venv_py3_13/bin/activate
-uv pip install poetry
-poetry build -v
+CIBW_BEFORE_ALL_LINUX="yum install -y gcc-c++" \
+CIBW_ENVIRONMENT="CMAKE_CXX_COMPILER=g++ CMAKE_C_COMPILER=gcc" \
+CIBW_SKIP="*-musllinux*" \
+cibuildwheel --platform linux --archs x86_64

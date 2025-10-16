@@ -50,3 +50,6 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y clang"
