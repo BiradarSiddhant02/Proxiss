@@ -11,9 +11,10 @@
     *   Euclidean (L2)
     *   Manhattan (L1) 
     *   Cosine Similarity
-*   **Two Search Modes:**
+*   **Three Search Modes:**
     *   **ProxiFlat:** Vector-only indexing for pure similarity search
     *   **ProxiKNN:** Classification-focused search with label storage
+    *   **ProxiPCA:** Dimensionality reduction combined with similarity search
 *   **Python Integration:** Clean Python API powered by pybind11
 *   **Batched Operations:** Efficient batch processing for multiple queries
 *   **Automatic Dependencies:** CMake automatically downloads and configures required dependencies
@@ -26,7 +27,7 @@ Vector similarity search is fundamental to many modern applications, but traditi
 *   Providing optimized C++ implementations with parallel processing
 *   Offering clean, simple APIs that hide implementation complexity  
 *   Focusing on core functionality without unnecessary overhead
-*   Supporting both pure vector search and classification use cases
+*   Supporting pure vector search, classification, and dimensionality reduction use cases
 
 ## Installation
 
@@ -39,7 +40,7 @@ Proxiss builds from source with automatic dependency management.
 *   CMake 3.16 or higher
 *   UV package manager
 
-**Note:** The build system automatically installs clang++, OpenMP, and pybind11 if not found.
+**Note:** The build system automatically installs clang++, OpenMP, Eigen3, and pybind11 if not found.
 
 ### Building from Source
 
@@ -127,6 +128,46 @@ knn_loaded = ProxiKNN(n_neighbours=2, n_jobs=2, distance_function="l2")
 knn_loaded.load_state("model_dir")
 ```
 
+### ProxiPCA: Dimensionality Reduction + Search
+
+```python
+from proxiss import ProxiPCA
+import numpy as np
+
+# High-dimensional sample data (e.g., 768-dimensional embeddings)
+embeddings = np.random.randn(1000, 768).astype(np.float32)
+
+# Initialize ProxiPCA with dimensionality reduction
+# n_components as percentage: 0.065 means reduce to 6.5% of original dimensions
+# For 768D data: 768 * 0.065 ≈ 50 dimensions
+pca = ProxiPCA(k=5, num_threads=4, objective_function="l2", n_components=0.065)
+
+# Fit PCA, transform data, and index in one step
+pca.fit_transform_index(embeddings)
+
+print(f"Original dimensions: {embeddings.shape[1]}")
+print(f"Reduced dimensions: {pca.get_n_components()}")
+
+# Query for nearest neighbors (query is automatically transformed)
+query = np.random.randn(768).astype(np.float32)
+indices = pca.find_indices(query)
+print(f"Nearest neighbor indices: {indices}")
+
+# Batch queries
+queries = np.random.randn(10, 768).astype(np.float32)
+batch_indices = pca.find_indices_batched(queries)
+print(f"Batch results shape: {batch_indices.shape}")
+
+# Insert new data (automatically transformed)
+new_data = np.random.randn(100, 768).astype(np.float32)
+pca.insert_data(new_data)
+
+# Save and load (saves both PCA transformation and index)
+pca.save_state("pca_index.bin")
+pca_loaded = ProxiPCA(k=5, num_threads=4, objective_function="l2", n_components=0.065)
+pca_loaded.load_state("pca_index.bin")
+```
+
 ## Benchmarking
 
 Proxiss includes benchmarking scripts to evaluate performance.
@@ -155,7 +196,17 @@ Test classification performance:
 python scripts/bench_proxiss_knn.py --X_path scripts/X.npy -k 5 --threads 4 --objective l2
 ```
 
-### 4. Compare with FAISS
+### 4. Benchmark ProxiPCA
+
+Test dimensionality reduction + similarity search performance:
+
+```bash
+# -c flag specifies n_components as percentage (0.0-1.0)
+# Example: -c 0.065 means reduce to 6.5% of original dimensions
+python scripts/bench_proxiss_pca.py --X_path scripts/X.npy -k 5 --threads 4 --objective l2 -c 0.065
+```
+
+### 5. Compare with FAISS
 
 Install FAISS and compare performance:
 
@@ -164,7 +215,7 @@ uv pip install faiss-cpu
 python scripts/bench_faiss.py --X_path scripts/X.npy -k 5 --threads 4 --objective l2
 ```
 
-### 5. Compare with scikit-learn
+### 6. Compare with scikit-learn
 
 Install scikit-learn and compare KNN classification performance:
 
@@ -192,14 +243,18 @@ This script loads pre-computed embeddings and allows interactive similarity sear
 *   **Core C++ Implementation:**
     *   `src/proxi_flat.cc`, `include/proxi_flat.h` - Vector similarity search
     *   `src/proxi_knn.cc`, `include/proxi_knn.h` - KNN classification
+    *   `src/pca.cc`, `include/pca.h` - PCA dimensionality reduction
+    *   `src/proxi_pca.cc`, `include/proxi_pca.h` - PCA + similarity search wrapper
     *   `src/priority_queue.cc`, `include/priority_queue.h` - Custom priority queue
     *   `include/distance.hpp` - Distance function implementations
 
 *   **Python Bindings:**
     *   `bindings/proxi_flat_binding.cc` - ProxiFlat Python interface  
     *   `bindings/proxi_knn_binding.cc` - ProxiKNN Python interface
+    *   `bindings/proxi_pca_binding.cc` - ProxiPCA Python interface
     *   `proxiss/ProxiFlat.py` - Python wrapper for ProxiFlat
     *   `proxiss/ProxiKNN.py` - Python wrapper for ProxiKNN
+    *   `proxiss/ProxiPCA.py` - Python wrapper for ProxiPCA
 
 *   **Build System:**
     *   `CMakeLists.txt` - C++ build configuration with automatic dependencies
@@ -217,6 +272,7 @@ python -m pytest tests/ -v
 # Run specific tests
 python -m pytest tests/test_proxi_flat.py -v
 python -m pytest tests/test_proxi_knn.py -v
+python -m pytest tests/test_proxi_pca.py -v
 ```
 
 ### Building for Development
@@ -249,6 +305,19 @@ uv pip install -e . --force-reinstall --no-deps
 *   `predict(features)` - Predict class labels
 *   `save_state(directory)` - Save model to directory
 *   `load_state(directory)` - Load model from directory
+
+### ProxiPCA Methods
+*   `__init__(k, num_threads, objective_function, n_components)` - Initialize with PCA reduction
+*   `fit_transform_index(embeddings)` - Fit PCA, transform data, and index
+*   `find_indices(query)` - Find nearest neighbors (query auto-transformed)
+*   `find_indices_batched(queries)` - Batch query processing
+*   `insert_data(embeddings)` - Insert new data (auto-transformed)
+*   `get_n_components()` - Get actual number of PCA components used
+*   `get_components()` - Get PCA component vectors
+*   `get_mean()` - Get PCA mean vector
+*   `get_explained_variance()` - Get variance explained by each component
+*   `save_state(filepath)` - Save PCA transformation and index
+*   `load_state(filepath)` - Load PCA transformation and index
 
 ## License
 

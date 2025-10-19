@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "proxiss"
 version = "0.4.0"
-description = "Proxi: Accelerating nearest-neighbor search for high-dimensional data!"
+description = "Proxiss: Accelerating nearest-neighbor search for high-dimensional data!"
 authors = [
   {name = "Siddhant Biradar", email = "siddhant.biradar.pes@gmail.com"}
 ]
@@ -25,11 +25,12 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "Operating System :: OS Independent",
+    "Operating System :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: C++",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
