@@ -52,4 +52,4 @@ exclude = '''
 '''
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y clang"
+before-all = "yum install -y clang eigen3-devel epel-release"
