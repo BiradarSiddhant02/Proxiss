@@ -16,11 +16,10 @@
 
 #include "proxi_pca.h"
 #include <stdexcept>
-#include <Eigen/Dense>
 
 ProxiPCA::ProxiPCA(size_t n_components, size_t k, size_t num_threads,
                    const std::string &objective_function)
-    : m_pca(n_components),
+    : m_pca_result(0, 0),  // Will be initialized in fit_transform_index
       m_proxi_flat(k, num_threads, objective_function),
       m_n_components(n_components),
       m_is_fitted(false) {}
@@ -30,18 +29,32 @@ void ProxiPCA::fit_transform_index(const std::vector<std::vector<float>> &embedd
         throw std::runtime_error("Embeddings cannot be empty.");
     }
 
+    size_t n_samples = embeddings.size();
+    size_t n_features = embeddings[0].size();
+
+    // Convert input to Matrix format
+    Matrix data(n_samples, n_features);
+    for (size_t i = 0; i < n_samples; ++i) {
+        if (embeddings[i].size() != n_features) {
+            throw std::runtime_error("All embeddings must have the same dimension.");
+        }
+        for (size_t j = 0; j < n_features; ++j) {
+            data(i, j) = embeddings[i][j];
+        }
+    }
+
     // Fit PCA on the embeddings
-    m_pca.fit(embeddings);
+    m_pca_result = PCA::fit(data, m_n_components);
     m_is_fitted = true;
 
     // Transform embeddings to reduced dimensions
-    matrix reduced = m_pca.transform(embeddings);
+    Matrix reduced = PCA::transform(data, m_pca_result);
 
-    // Convert Eigen matrix back to vector<vector<float>> for ProxiFlat
+    // Convert Matrix back to vector<vector<float>> for ProxiFlat
     std::vector<std::vector<float>> reduced_embeddings(reduced.rows());
-    for (int i = 0; i < reduced.rows(); ++i) {
+    for (size_t i = 0; i < reduced.rows(); ++i) {
         reduced_embeddings[i].resize(reduced.cols());
-        for (int j = 0; j < reduced.cols(); ++j) {
+        for (size_t j = 0; j < reduced.cols(); ++j) {
             reduced_embeddings[i][j] = reduced(i, j);
         }
     }
@@ -55,18 +68,18 @@ std::vector<size_t> ProxiPCA::find_indices(const std::vector<float> &query) {
         throw std::runtime_error("ProxiPCA must be fitted before searching. Call fit_transform_index() first.");
     }
 
-    // Convert query to Eigen matrix (1 x D)
-    matrix query_mat(1, query.size());
+    // Convert query to Matrix (1 x D)
+    Matrix query_mat(1, query.size());
     for (size_t i = 0; i < query.size(); ++i) {
         query_mat(0, i) = query[i];
     }
 
     // Reduce query dimensions using PCA
-    matrix reduced_query = m_pca.transform(query_mat);
+    Matrix reduced_query = PCA::transform(query_mat, m_pca_result);
 
     // Convert reduced query back to vector
     std::vector<float> reduced_query_vec(reduced_query.cols());
-    for (int j = 0; j < reduced_query.cols(); ++j) {
+    for (size_t j = 0; j < reduced_query.cols(); ++j) {
         reduced_query_vec[j] = reduced_query(0, j);
     }
 
@@ -81,14 +94,32 @@ std::vector<std::vector<size_t>> ProxiPCA::find_indices_batched(
         throw std::runtime_error("ProxiPCA must be fitted before searching. Call fit_transform_index() first.");
     }
 
+    size_t n_queries = queries.size();
+    if (n_queries == 0) {
+        return {};
+    }
+
+    size_t n_features = queries[0].size();
+
+    // Convert queries to Matrix format
+    Matrix queries_mat(n_queries, n_features);
+    for (size_t i = 0; i < n_queries; ++i) {
+        if (queries[i].size() != n_features) {
+            throw std::runtime_error("All queries must have the same dimension.");
+        }
+        for (size_t j = 0; j < n_features; ++j) {
+            queries_mat(i, j) = queries[i][j];
+        }
+    }
+
     // Transform all queries using PCA
-    matrix reduced_queries = m_pca.transform(queries);
+    Matrix reduced_queries = PCA::transform(queries_mat, m_pca_result);
 
     // Convert to vector<vector<float>>
     std::vector<std::vector<float>> reduced_queries_vec(reduced_queries.rows());
-    for (int i = 0; i < reduced_queries.rows(); ++i) {
+    for (size_t i = 0; i < reduced_queries.rows(); ++i) {
         reduced_queries_vec[i].resize(reduced_queries.cols());
-        for (int j = 0; j < reduced_queries.cols(); ++j) {
+        for (size_t j = 0; j < reduced_queries.cols(); ++j) {
             reduced_queries_vec[i][j] = reduced_queries(i, j);
         }
     }
@@ -102,18 +133,18 @@ void ProxiPCA::insert_data(const std::vector<float> &embedding) {
         throw std::runtime_error("ProxiPCA must be fitted before inserting data. Call fit_transform_index() first.");
     }
 
-    // Convert to Eigen matrix (1 x D)
-    matrix emb_mat(1, embedding.size());
+    // Convert to Matrix (1 x D)
+    Matrix emb_mat(1, embedding.size());
     for (size_t i = 0; i < embedding.size(); ++i) {
         emb_mat(0, i) = embedding[i];
     }
 
     // Reduce dimensions using PCA
-    matrix reduced = m_pca.transform(emb_mat);
+    Matrix reduced = PCA::transform(emb_mat, m_pca_result);
 
     // Convert to vector
     std::vector<float> reduced_vec(reduced.cols());
-    for (int j = 0; j < reduced.cols(); ++j) {
+    for (size_t j = 0; j < reduced.cols(); ++j) {
         reduced_vec[j] = reduced(0, j);
     }
 

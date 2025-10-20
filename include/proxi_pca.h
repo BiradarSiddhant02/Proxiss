@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "pca.h"
+#include "pca.hpp"
 #include "proxi_flat.h"
 
 /**
@@ -87,13 +87,16 @@ public:
     size_t get_num_threads() const { return m_proxi_flat.get_num_threads(); }
     size_t get_n_components() const { return m_n_components; }
     bool is_fitted() const { return m_is_fitted; }
+    
+    // Get PCA information
+    const PCAResult& get_pca_result() const { return m_pca_result; }
 
     // Setters
     void set_k(size_t k) { m_proxi_flat.set_k(k); }
     void set_num_threads(size_t num_threads) { m_proxi_flat.set_num_threads(num_threads); }
 
 private:
-    PCA m_pca;                  ///< PCA model for dimensionality reduction
+    PCAResult m_pca_result;     ///< PCA result containing components, mean, variance
     ProxiFlat m_proxi_flat;     ///< ProxiFlat index for reduced embeddings
     size_t m_n_components;      ///< Number of PCA components
     bool m_is_fitted;           ///< Whether PCA has been fitted

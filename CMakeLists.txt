@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 3.16)
 # 2. Auto-installs OpenMP if not available
 # 3. Auto-downloads pybind11 via FetchContent
 # 4. Supports multiple package managers: apt, yum, dnf, pacman, brew
+# 5. Uses custom Matrix class (no external linear algebra dependencies)
 # ==============================================================================
 
 # Suppress developer warnings
@@ -125,54 +126,6 @@ else()
     message(STATUS "Building without OpenMP support")
 endif()
 
-# Find Eigen3 package (required for PCA)
-find_package(Eigen3 QUIET)
-
-if(NOT Eigen3_FOUND)
-    message(STATUS "Eigen3 not found, attempting to install...")
-    
-    # Try different package managers to install Eigen3
-    find_program(APT_EXECUTABLE apt-get)
-    find_program(YUM_EXECUTABLE yum)
-    find_program(DNF_EXECUTABLE dnf)
-    find_program(PACMAN_EXECUTABLE pacman)
-    find_program(BREW_EXECUTABLE brew)
-    
-    if(APT_EXECUTABLE)
-        message(STATUS "Installing Eigen3 via apt-get...")
-        execute_process(COMMAND sudo apt-get update)
-        execute_process(COMMAND sudo apt-get install -y libeigen3-dev)
-    elseif(YUM_EXECUTABLE)
-        message(STATUS "Installing Eigen3 via yum...")
-        execute_process(COMMAND sudo yum install -y eigen3-devel)
-    elseif(DNF_EXECUTABLE)
-        message(STATUS "Installing Eigen3 via dnf...")
-        execute_process(COMMAND sudo dnf install -y eigen3-devel)
-    elseif(PACMAN_EXECUTABLE)
-        message(STATUS "Installing Eigen3 via pacman...")
-        execute_process(COMMAND sudo pacman -S --noconfirm eigen)
-    elseif(BREW_EXECUTABLE)
-        message(STATUS "Installing Eigen3 via brew...")
-        execute_process(COMMAND brew install eigen)
-    else()
-        message(WARNING "No supported package manager found for Eigen3 installation")
-    endif()
-    
-    # Try to find Eigen3 again after installation
-    find_package(Eigen3 QUIET)
-    
-    if(NOT Eigen3_FOUND)
-        message(FATAL_ERROR "Eigen3 is required for PCA functionality but could not be found or installed")
-    endif()
-endif()
-
-if(Eigen3_FOUND)
-    message(STATUS "Eigen3 found: ${EIGEN3_INCLUDE_DIR}")
-    include_directories(${EIGEN3_INCLUDE_DIR})
-else()
-    message(FATAL_ERROR "Eigen3 is required but not found")
-endif()
-
 # Try to find pybind11 first, only fetch if not found
 find_package(pybind11 QUIET)
 
@@ -226,7 +179,6 @@ endif()
 
 # Define the proxi_pca module (includes PCA and ProxiPCA sources, like KNN includes its source)
 pybind11_add_module(proxi_pca_cpp MODULE
-    src/pca.cc
     src/proxi_pca.cc
     bindings/proxi_pca_binding.cc
 )

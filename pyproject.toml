@@ -25,7 +25,6 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "Operating System :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -53,4 +52,4 @@ exclude = '''
 '''
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y clang eigen3-devel epel-release"
+before-all = "yum install -y clang"
