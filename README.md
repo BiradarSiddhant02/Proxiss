@@ -15,10 +15,9 @@
     *   **ProxiFlat:** Vector-only indexing for pure similarity search
     *   **ProxiKNN:** Classification-focused search with label storage
     *   **ProxiPCA:** Dimensionality reduction combined with similarity search
-*   **Python Integration:** Clean Python API powered by pybind11
 *   **Batched Operations:** Efficient batch processing for multiple queries
-*   **Automatic Dependencies:** CMake automatically downloads and configures required dependencies
-*   **Lightweight Design:** Focused on core vector search functionality
+*   **Python Integration**
+
 
 ## Why Proxiss?
 
@@ -31,7 +30,7 @@ Vector similarity search is fundamental to many modern applications, but traditi
 
 ## Installation
 
-Proxiss builds from source with automatic dependency management.
+Proxiss builds from source with automatic dependency management. or from PyPI https://pypi.org/project/proxiss/
 
 ### Prerequisites
 
@@ -40,7 +39,7 @@ Proxiss builds from source with automatic dependency management.
 *   CMake 3.16 or higher
 *   UV package manager
 
-**Note:** The build system automatically installs clang++, OpenMP, Eigen3, and pybind11 if not found.
+**Note:** The build system automatically installs clang++, OpenMP and pybind11 if not found.
 
 ### Building from Source
 
