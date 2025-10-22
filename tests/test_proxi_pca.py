@@ -164,15 +164,12 @@ class TestProxiPCA(unittest.TestCase):
         # The new item should be one of its own closest neighbors
         self.assertIn(self.num_samples, indices)
 
-    @unittest.expectedFailure
     def test_08_save_and_load(self):
         """Test save_state and load_state functionality.
 
         Verifies that a fitted ProxiPCA can be saved and loaded, maintaining state.
         
-        NOTE: Currently marked as expectedFailure because PCA state 
-        (components, mean, variance) is not fully serialized yet.
-        Only the ProxiFlat index is saved/loaded.
+        NOTE: PCA state (components, mean, variance) is now fully serialized.
         """
         pca_orig = proxiss.ProxiPCA(
             n_components=self.n_components,
@@ -182,13 +179,13 @@ class TestProxiPCA(unittest.TestCase):
         pca_orig.fit_transform_index(self.embeddings)
         pca_orig.save_state(self.save_directory)
         
-        # Load into a new instance (using file path, not directory)
+        # Load into a new instance (using directory path)
         pca_loaded = proxiss.ProxiPCA(
             n_components=self.n_components,
             k=self.k,
             num_threads=self.num_threads
         )
-        pca_loaded.load_state(self.save_file_path)
+        pca_loaded.load_state(self.save_directory)
         
         # Verify loaded instance works correctly
         self.assertTrue(pca_loaded.is_fitted())

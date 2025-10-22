@@ -16,6 +16,9 @@
 
 #include "proxi_pca.h"
 #include <stdexcept>
+#include <filesystem>
+#include <fstream>
+#include <cstring>
 
 ProxiPCA::ProxiPCA(size_t n_components, size_t k, size_t num_threads,
                    const std::string &objective_function)
@@ -157,20 +160,138 @@ void ProxiPCA::save_state(const std::string &directory_path) {
         throw std::runtime_error("ProxiPCA must be fitted before saving. Call fit_transform_index() first.");
     }
 
-    // TODO: Implement PCA save/load functionality
-    // For now, just save the ProxiFlat index
-    m_proxi_flat.save_state(directory_path);
+    try {
+        std::filesystem::path path(directory_path);
+        if (!std::filesystem::exists(path)) {
+            std::filesystem::create_directories(path);
+        }
+        if (!std::filesystem::is_directory(path)) {
+            throw std::runtime_error("Path is not a directory: " + directory_path);
+        }
 
-    // Note: You'll need to add serialization for PCA components, mean, etc.
-    // This is a simplified version
+        // Save ProxiFlat index first
+        m_proxi_flat.save_state(directory_path);
+
+        // Save PCA state
+        std::filesystem::path pca_file_path = path / "pca_data.bin";
+        std::ofstream out_file(pca_file_path, std::ios::binary);
+        if (!out_file.is_open()) {
+            throw std::runtime_error("Failed to open PCA file for writing: " + pca_file_path.string());
+        }
+
+        // Save metadata
+        out_file.write(reinterpret_cast<const char*>(&m_n_components), sizeof(size_t));
+        
+        // Save PCA components matrix dimensions and data
+        size_t components_rows = m_pca_result.components.rows();
+        size_t components_cols = m_pca_result.components.cols();
+        out_file.write(reinterpret_cast<const char*>(&components_rows), sizeof(size_t));
+        out_file.write(reinterpret_cast<const char*>(&components_cols), sizeof(size_t));
+        out_file.write(reinterpret_cast<const char*>(m_pca_result.components.data()), 
+                      components_rows * components_cols * sizeof(float));
+
+        // Save mean matrix dimensions and data
+        size_t mean_rows = m_pca_result.mean.rows();
+        size_t mean_cols = m_pca_result.mean.cols();
+        out_file.write(reinterpret_cast<const char*>(&mean_rows), sizeof(size_t));
+        out_file.write(reinterpret_cast<const char*>(&mean_cols), sizeof(size_t));
+        out_file.write(reinterpret_cast<const char*>(m_pca_result.mean.data()), 
+                      mean_rows * mean_cols * sizeof(float));
+
+        // Save explained variance vectors
+        size_t var_size = m_pca_result.explained_variance.size();
+        out_file.write(reinterpret_cast<const char*>(&var_size), sizeof(size_t));
+        out_file.write(reinterpret_cast<const char*>(m_pca_result.explained_variance.data()), 
+                      var_size * sizeof(float));
+
+        size_t var_ratio_size = m_pca_result.explained_variance_ratio.size();
+        out_file.write(reinterpret_cast<const char*>(&var_ratio_size), sizeof(size_t));
+        out_file.write(reinterpret_cast<const char*>(m_pca_result.explained_variance_ratio.data()), 
+                      var_ratio_size * sizeof(float));
+
+        if (!out_file.good()) {
+            throw std::runtime_error("Failed to write PCA data to file: " + pca_file_path.string());
+        }
+
+        out_file.close();
+    } catch (const std::filesystem::filesystem_error &error) {
+        throw std::runtime_error("Filesystem error: " + std::string(error.what()));
+    } catch (const std::exception &e) {
+        throw std::runtime_error("Save failed: " + std::string(e.what()));
+    }
 }
 
 void ProxiPCA::load_state(const std::string &directory_path) {
-    // TODO: Implement PCA save/load functionality
-    // For now, just load the ProxiFlat index
-    m_proxi_flat.load_state(directory_path);
-    m_is_fitted = true;
+    try {
+        std::filesystem::path path(directory_path);
+        if (!std::filesystem::exists(path)) {
+            throw std::runtime_error("Directory does not exist: " + directory_path);
+        }
+        if (!std::filesystem::is_directory(path)) {
+            throw std::runtime_error("Path is not a directory: " + directory_path);
+        }
 
-    // Note: You'll need to add deserialization for PCA components, mean, etc.
-    // This is a simplified version
+        // Load ProxiFlat index first
+        std::filesystem::path proxi_flat_file = path / "data.bin";
+        if (!std::filesystem::exists(proxi_flat_file)) {
+            throw std::runtime_error("ProxiFlat data file not found: " + proxi_flat_file.string());
+        }
+        m_proxi_flat.load_state(proxi_flat_file.string());
+
+        // Load PCA state
+        std::filesystem::path pca_file_path = path / "pca_data.bin";
+        if (!std::filesystem::exists(pca_file_path)) {
+            throw std::runtime_error("PCA data file not found: " + pca_file_path.string());
+        }
+
+        std::ifstream in_file(pca_file_path, std::ios::binary);
+        if (!in_file.is_open()) {
+            throw std::runtime_error("Failed to open PCA file for reading: " + pca_file_path.string());
+        }
+
+        // Load metadata
+        in_file.read(reinterpret_cast<char*>(&m_n_components), sizeof(size_t));
+
+        // Load PCA components matrix
+        size_t components_rows, components_cols;
+        in_file.read(reinterpret_cast<char*>(&components_rows), sizeof(size_t));
+        in_file.read(reinterpret_cast<char*>(&components_cols), sizeof(size_t));
+        
+        m_pca_result.components = Matrix(components_rows, components_cols);
+        in_file.read(reinterpret_cast<char*>(m_pca_result.components.data()), 
+                    components_rows * components_cols * sizeof(float));
+
+        // Load mean matrix
+        size_t mean_rows, mean_cols;
+        in_file.read(reinterpret_cast<char*>(&mean_rows), sizeof(size_t));
+        in_file.read(reinterpret_cast<char*>(&mean_cols), sizeof(size_t));
+        
+        m_pca_result.mean = Matrix(mean_rows, mean_cols);
+        in_file.read(reinterpret_cast<char*>(m_pca_result.mean.data()), 
+                    mean_rows * mean_cols * sizeof(float));
+
+        // Load explained variance vectors
+        size_t var_size;
+        in_file.read(reinterpret_cast<char*>(&var_size), sizeof(size_t));
+        m_pca_result.explained_variance.resize(var_size);
+        in_file.read(reinterpret_cast<char*>(m_pca_result.explained_variance.data()), 
+                    var_size * sizeof(float));
+
+        size_t var_ratio_size;
+        in_file.read(reinterpret_cast<char*>(&var_ratio_size), sizeof(size_t));
+        m_pca_result.explained_variance_ratio.resize(var_ratio_size);
+        in_file.read(reinterpret_cast<char*>(m_pca_result.explained_variance_ratio.data()), 
+                    var_ratio_size * sizeof(float));
+
+        if (!in_file.good()) {
+            throw std::runtime_error("Failed to read PCA data from file: " + pca_file_path.string());
+        }
+
+        in_file.close();
+        m_is_fitted = true;
+    } catch (const std::filesystem::filesystem_error &error) {
+        throw std::runtime_error("Filesystem error: " + std::string(error.what()));
+    } catch (const std::exception &e) {
+        throw std::runtime_error("Load failed: " + std::string(e.what()));
+    }
 }
