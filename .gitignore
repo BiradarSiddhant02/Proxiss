@@ -10,3 +10,4 @@ dist
 *venv*
 wheelhouse
 twine-token.txt
+.PyPI_token
