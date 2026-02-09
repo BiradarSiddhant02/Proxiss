@@ -123,6 +123,13 @@ private:
      */
     std::vector<size_t> m_get_neighbours(const std::vector<float> &query) noexcept;
 
+    /**
+     * @brief Serial version of m_get_neighbours for use within batch outer parallelism.
+     * @param query Query embedding vector.
+     * @return std::vector<size_t> Indices of the K nearest neighbours.
+     */
+    std::vector<size_t> m_get_neighbours_serial(const std::vector<float> &query) noexcept;
+
 public:
     /**
      * @brief Constructs a ProxiFlat object.

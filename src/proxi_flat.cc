@@ -92,23 +92,90 @@ ProxiFlat::strings_to_bytes(const std::vector<std::string> &strs) noexcept {
     return bytes;
 }
 
-// PRIVATE
+// PRIVATE - parallel inner search (for single query API)
 std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float> &query) noexcept {
     using pair = std::pair<float, size_t>;
-
-    PriorityQueue heap;
-    heap.reserve(m_K + 1); // avoid reallocs
 
     long long int num_samples  = static_cast<long long int>(m_num_samples);
     long long int num_features = static_cast<long long int>(m_num_features);
 
+    // Thread-local heaps - each thread maintains its own top-k
+    std::vector<PriorityQueue> thread_heaps(m_num_threads);
+    for (auto &h : thread_heaps) {
+        h.reserve(m_K + 1);
+    }
+
+#pragma omp parallel num_threads(m_num_threads)
+    {
+        int tid = omp_get_thread_num();
+        PriorityQueue &local_heap = thread_heaps[tid];
+
 #pragma omp for nowait
+        for (long long int i = 0; i < num_samples; i++) {
+            float distance = m_objective_function(
+                std::span<const float>(query),
+                std::span<const float>(m_embeddings_flat).subspan(i * num_features, num_features));
+
+            const float key = -distance; // invert to use implicit min-heap as max-heap
+
+            bool should_insert  = local_heap.size() < m_K;
+            bool should_replace = !should_insert && key > local_heap.top().first;
+
+            if (should_insert || should_replace) {
+                if (should_replace)
+                    local_heap.pop();
+                local_heap.push({key, static_cast<size_t>(i)});
+            }
+        }
+    } // implicit barrier here ensures all threads done
+
+    // Merge all thread-local heaps into final result
+    PriorityQueue merged;
+    merged.reserve(m_K + 1);
+
+    for (auto &local_heap : thread_heaps) {
+        while (!local_heap.empty()) {
+            auto elem = local_heap.top();
+            local_heap.pop();
+
+            bool should_insert  = merged.size() < m_K;
+            bool should_replace = !should_insert && elem.first > merged.top().first;
+
+            if (should_insert || should_replace) {
+                if (should_replace)
+                    merged.pop();
+                merged.push(elem);
+            }
+        }
+    }
+
+    std::vector<size_t> indices;
+    indices.reserve(merged.size());
+
+    while (!merged.empty()) {
+        indices.push_back(merged.top().second);
+        merged.pop();
+    }
+
+    return indices;
+}
+
+// PRIVATE - serial inner search (for use within batch outer parallelism)
+std::vector<size_t> ProxiFlat::m_get_neighbours_serial(const std::vector<float> &query) noexcept {
+    using pair = std::pair<float, size_t>;
+
+    PriorityQueue heap;
+    heap.reserve(m_K + 1);
+
+    long long int num_samples  = static_cast<long long int>(m_num_samples);
+    long long int num_features = static_cast<long long int>(m_num_features);
+
     for (long long int i = 0; i < num_samples; i++) {
         float distance = m_objective_function(
             std::span<const float>(query),
             std::span<const float>(m_embeddings_flat).subspan(i * num_features, num_features));
 
-        const float key = -distance; // invert to use implicit min-heap as max-heap
+        const float key = -distance;
 
         bool should_insert  = heap.size() < m_K;
         bool should_replace = !should_insert && key > heap.top().first;
@@ -121,7 +188,7 @@ std::vector<size_t> ProxiFlat::m_get_neighbours(const std::vector<float> &query)
     }
 
     std::vector<size_t> indices;
-    indices.reserve(heap.size()); // reserve to avoid realloc
+    indices.reserve(heap.size());
 
     while (!heap.empty()) {
         indices.push_back(heap.top().second);
@@ -187,9 +254,10 @@ ProxiFlat::find_indices(const std::vector<std::vector<float>> &queries) noexcept
 
     long long int num_queries = static_cast<long long int>(queries.size());
 
+    // Outer parallelism: each thread handles one query using serial inner search
 #pragma omp parallel for
     for (long long int i = 0; i < num_queries; i++) {
-        indices[i] = find_indices(queries[i]);
+        indices[i] = m_get_neighbours_serial(queries[i]);
     }
 
     return indices;
